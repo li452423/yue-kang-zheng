@@ -1,0 +1,1709 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#1A6EFF">
+<title>粤康证 · 广东省食品从业人员健康证明</title>
+<style>
+:root{
+  --blue:#1A6EFF; --blue-d:#0d4fc4; --red:#cf0a1e;
+  --bg:#f2f4f8; --card:#fff; --text:#151b26; --muted:#8a93a5; --line:#e9edf4;
+  --green:#12b76a; --orange:#f79009;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;height:100%;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  background:#e6ebf4;color:var(--text);
+  display:flex;justify-content:center;
+  overflow:hidden;
+}
+.app{
+  width:100%;max-width:430px;height:100vh;height:100dvh;
+  background:var(--bg);display:flex;flex-direction:column;
+  position:relative;overflow:hidden;
+  box-shadow:0 0 50px rgba(20,40,80,.12);
+  padding-top:env(safe-area-inset-top);
+  padding-bottom:0;
+}
+.views{flex:1;position:relative;overflow:hidden;}
+.view{
+  position:absolute;inset:0;display:none;flex-direction:column;overflow:hidden;
+  transform:translateX(0);will-change:transform,opacity;
+}
+.view.active{display:flex;animation:viewIn .28s cubic-bezier(.22,.8,.27,1);}
+.view.exit-left{display:flex;animation:viewOutLeft .28s cubic-bezier(.22,.8,.27,1) forwards;}
+.view.exit-right{display:flex;animation:viewOutRight .28s cubic-bezier(.22,.8,.27,1) forwards;}
+@keyframes viewIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+@keyframes viewOutLeft{from{opacity:1;transform:none}to{opacity:0;transform:translateX(-24px)}}
+@keyframes viewOutRight{from{opacity:1;transform:none}to{opacity:0;transform:translateX(24px)}}
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 14px;}
+.safe-bottom{height:24px;}
+
+/* ---------- 启动闪屏 ---------- */
+#splash{
+  position:fixed;inset:0;z-index:9999;
+  background:linear-gradient(160deg,#2b7bff 0%,#0d4fc4 55%,#0a3d9e 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  color:#fff;transition:opacity .4s ease,visibility .4s ease;
+}
+#splash.hide{opacity:0;visibility:hidden;pointer-events:none;}
+.splash-logo{
+  width:88px;height:88px;border-radius:24px;
+  background:rgba(255,255,255,.16);border:1.5px solid rgba(255,255,255,.35);
+  display:flex;align-items:center;justify-content:center;
+  font-size:44px;font-weight:700;backdrop-filter:blur(6px);
+  box-shadow:0 12px 40px rgba(0,0,0,.2);
+  animation:splashPulse 1.4s ease-in-out infinite;
+}
+@keyframes splashPulse{
+  0%,100%{transform:scale(1);box-shadow:0 12px 40px rgba(0,0,0,.2)}
+  50%{transform:scale(1.05);box-shadow:0 18px 60px rgba(60,140,255,.45)}
+}
+.splash-title{font-size:32px;letter-spacing:8px;font-weight:700;margin-top:22px;animation:splashFade 1s ease both .2s}
+.splash-sub{font-size:13px;opacity:.82;margin-top:8px;letter-spacing:2px;animation:splashFade 1s ease both .35s}
+@keyframes splashFade{from{opacity:0;transform:translateY(8px)}to{opacity:.82;transform:none}}
+.splash-spinner{
+  width:26px;height:26px;border:2.5px solid rgba(255,255,255,.3);
+  border-top-color:#fff;border-radius:50%;margin-top:42px;
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ---------- 通用 ---------- */
+.btn{
+  border:0;border-radius:12px;font-size:15px;font-weight:600;
+  padding:13px 18px;cursor:pointer;font-family:inherit;
+  transition:transform .12s,opacity .12s;letter-spacing:.5px;
+}
+.btn:active{transform:scale(.97);opacity:.88;}
+.btn.primary{background:linear-gradient(135deg,#3b86ff,#1257d6);color:#fff;box-shadow:0 6px 16px rgba(26,110,255,.32);}
+.btn.ghost{background:#fff;color:var(--blue);border:1.5px solid #cfe0ff;}
+.btn.danger{background:#fff;color:#e5484d;border:1.5px solid #ffd4d5;}
+.btn.block{width:100%;display:block;}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.3px;}
+
+/* ---------- 登录 ---------- */
+#v-login{background:linear-gradient(160deg,#2b7bff 0%,#0d4fc4 55%,#0a3d9e 100%);}
+.login-inner{margin:auto;width:100%;padding:0 30px 60px;color:#fff;text-align:center;}
+.logo-badge{
+  width:76px;height:76px;margin:0 auto 18px;border-radius:22px;
+  background:rgba(255,255,255,.16);border:1.5px solid rgba(255,255,255,.35);
+  display:flex;align-items:center;justify-content:center;
+  font-size:36px;font-weight:700;backdrop-filter:blur(6px);
+  box-shadow:0 10px 30px rgba(0,0,0,.15);
+}
+.login-title{font-size:28px;margin:0 0 8px;letter-spacing:6px;font-weight:700;}
+.login-sub{font-size:13px;opacity:.82;margin:0 0 38px;letter-spacing:1px;}
+.field{
+  display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.96);
+  border-radius:14px;padding:0 14px;height:52px;margin-bottom:14px;
+  box-shadow:0 6px 20px rgba(0,0,0,.1);
+}
+.field-ico{font-size:16px;opacity:.6;}
+.field input{
+  flex:1;border:0;outline:0;background:transparent;font-size:16px;
+  color:#151b26;font-family:inherit;height:100%;
+}
+.field input::placeholder{color:#a8b0bf;}
+.code-btn{
+  border:0;background:transparent;color:var(--blue);font-weight:600;
+  font-size:14px;cursor:pointer;font-family:inherit;white-space:nowrap;
+  padding:6px 2px 6px 12px;border-left:1px solid #e4e9f2;
+}
+.code-btn:disabled{color:#b6bec9;}
+#btn-login{margin-top:20px;height:52px;font-size:17px;}
+.login-tip{font-size:12px;opacity:.75;margin-top:22px;letter-spacing:.5px;}
+.login-tip b{color:#ffe08a;}
+
+/* ---------- 首页 ---------- */
+.hero{
+  flex:0 0 auto;padding:22px 20px 46px;
+  background:linear-gradient(135deg,#2b7bff,#1257d6);
+  color:#fff;border-radius:0 0 24px 24px;
+  position:relative;z-index:2;
+}
+.hero.small{padding-bottom:38px;}
+.hero-row{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.hero-title{font-size:21px;font-weight:700;letter-spacing:1px;}
+.hero-sub{font-size:12px;opacity:.8;margin-top:5px;letter-spacing:.6px;}
+.hero-avatar{
+  width:44px;height:44px;border-radius:50%;flex:0 0 auto;
+  background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:700;
+}
+.hero-avatar.big{width:58px;height:58px;font-size:23px;}
+
+#v-home .scroll{margin-top:-32px;position:relative;z-index:3;padding-bottom:0;}
+
+.notice{
+  border-radius:12px;padding:11px 14px;font-size:13px;line-height:1.5;
+  margin-bottom:12px;letter-spacing:.2px;
+}
+.notice.ok{background:#e8f8f0;color:#0b7a4b;border:1px solid #c4ecd9;}
+.notice.warn{background:#fff6e6;color:#a35b00;border:1px solid #ffe0b0;}
+.notice.danger{background:#ffeded;color:#b3161a;border:1px solid #ffcfd0;}
+.notice b{font-size:15px;}
+
+/* 证照卡片 */
+.cert-card{
+  background:#fff;border-radius:18px;overflow:hidden;
+  box-shadow:0 8px 28px rgba(20,45,95,.1);
+  border:1px solid #eaeffa;
+}
+.cert-head{
+  display:flex;align-items:center;gap:11px;padding:15px 16px;
+  background:linear-gradient(135deg,#f4f8ff,#eaf1ff);
+  border-bottom:1px solid #e3ecfd;
+}
+.cert-emblem{
+  width:36px;height:36px;flex:0 0 auto;border-radius:10px;
+  background:linear-gradient(135deg,#cf0a1e,#a30816);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:19px;font-weight:700;box-shadow:0 4px 10px rgba(207,10,30,.28);
+}
+.cert-head-title{font-size:14.5px;font-weight:700;letter-spacing:.4px;}
+.cert-head-sub{font-size:9px;color:var(--muted);margin-top:3px;letter-spacing:.2px;}
+
+.cert-main{display:flex;gap:14px;padding:16px 16px 12px;}
+.cert-photo{
+  width:74px;height:96px;flex:0 0 auto;border-radius:8px;
+  background:linear-gradient(160deg,#f0f3f9,#dfe6f2);
+  border:1px solid #e0e6f1;display:flex;align-items:center;justify-content:center;
+}
+.cert-rows{flex:1;display:flex;flex-direction:column;justify-content:space-between;padding:2px 0;}
+.crow{display:flex;align-items:baseline;font-size:13.5px;line-height:1.5;}
+.crow span{color:var(--muted);width:70px;flex:0 0 auto;font-size:12.5px;}
+.crow b{font-weight:600;color:#151b26;}
+.crow b.ok{color:var(--green);}
+.cert-meta{padding:0 16px 12px;display:flex;flex-direction:column;gap:6px;}
+.cert-meta .crow{border-top:1px dashed #eef2f8;padding-top:6px;}
+.cert-meta .crow:first-child{border-top:0;padding-top:0;}
+
+.cert-foot{
+  display:flex;align-items:flex-end;justify-content:space-between;
+  padding:12px 16px 16px;gap:12px;
+  background:linear-gradient(180deg,#fff,#fbfcff);
+  border-top:1px solid #f0f4fa;
+}
+.qr-wrap{
+  width:84px;height:84px;flex:0 0 auto;border:1px solid #e6ebf4;
+  border-radius:8px;overflow:hidden;background:#fff;padding:4px;
+}
+.qr-wrap canvas,.qr-wrap img{width:100%!important;height:100%!important;display:block;}
+.seal-wrap{width:104px;height:104px;flex:0 0 auto;opacity:.94;}
+.seal-wrap img{width:100%;height:100%;display:block;}
+
+.actions{display:flex;gap:10px;margin-top:14px;}
+.actions .btn{flex:1;}
+
+.tips-card{
+  background:#fff;border-radius:14px;padding:14px 16px;margin-top:14px;
+  border:1px solid #eaeffa;
+}
+.tips-title{font-size:13px;font-weight:700;color:var(--blue);margin-bottom:8px;letter-spacing:.5px;}
+.tips-card ul{margin:0;padding-left:16px;color:#6b7688;font-size:12.5px;line-height:1.85;}
+
+/* ---------- 导航栏 ---------- */
+.navbar{
+  flex:0 0 auto;height:54px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 8px;background:linear-gradient(135deg,#2b7bff,#1257d6);color:#fff;
+  border-radius:0 0 18px 18px;box-shadow:0 4px 14px rgba(26,110,255,.22);z-index:5;
+}
+.navbar.light{background:linear-gradient(135deg,#2b7bff,#1257d6);}
+.nav-back{
+  width:44px;height:44px;border:0;background:transparent;color:#fff;
+  font-size:30px;line-height:1;cursor:pointer;font-family:inherit;padding-bottom:4px;
+}
+.nav-title{font-size:17px;font-weight:600;letter-spacing:1px;}
+.nav-pad{width:44px;}
+
+/* ---------- 打印预览 ---------- */
+.print-scroll{padding:14px 14px 0;background:#dfe5ef;}
+.a4-preview{
+  position:relative;width:100%;border-radius:8px;overflow:hidden;
+  background:#fff;box-shadow:0 8px 28px rgba(20,45,95,.18);
+}
+#printSheet{
+  position:absolute;top:0;left:0;width:794px;height:1123px;
+  transform-origin:top left;background:#fff;
+  padding:56px 68px 46px;display:flex;flex-direction:column;
+  font-family:"Songti SC","SimSun","STSong",serif;color:#101828;
+}
+.print-hint{
+  text-align:center;font-size:12px;color:#8a93a5;padding:14px 8px 0;
+  font-family:-apple-system,"PingFang SC",sans-serif;
+}
+.bottom-bar{
+  flex:0 0 auto;display:flex;gap:12px;padding:10px 14px;
+  padding-bottom:calc(10px + env(safe-area-inset-bottom));
+  background:#fff;border-top:1px solid var(--line);
+}
+.bottom-bar .btn{flex:1;}
+
+/* 打印版式内部 */
+.ps-top{text-align:center;border-bottom:2px solid #cf0a1e;padding-bottom:12px;}
+.ps-org{font-size:14px;letter-spacing:8px;color:#5b6478;font-family:-apple-system,"PingFang SC",sans-serif;}
+.ps-title{font-size:33px;font-weight:700;letter-spacing:6px;margin:16px 0 8px;color:#0d1b33;}
+.ps-en{font-size:10.5px;letter-spacing:1.6px;color:#93a0b5;font-family:-apple-system,sans-serif;text-transform:uppercase;}
+.ps-no{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:13px;color:#5b6478;margin:22px 0 10px;
+  font-family:-apple-system,"PingFang SC",sans-serif;
+}
+.ps-no .val{color:#cf0a1e;font-weight:700;}
+.ps-table{
+  width:100%;border-collapse:collapse;font-size:15px;
+  font-family:-apple-system,"PingFang SC",sans-serif;
+}
+.ps-table td{border:1px solid #c9d3e4;padding:13px 12px;line-height:1.4;}
+.ps-table td.k{background:#f5f8fd;color:#5b6478;font-size:13.5px;text-align:center;white-space:nowrap;}
+.ps-table td.v{font-weight:600;color:#101828;}
+.ps-table td.hl{color:#cf0a1e;font-weight:700;}
+.ps-mid{flex:1;display:flex;align-items:flex-end;justify-content:space-between;padding:26px 6px 18px;gap:20px;}
+.ps-qrbox{text-align:center;}
+.ps-qrbox img{width:126px;height:126px;display:block;border:1px solid #e2e8f2;padding:5px;border-radius:6px;background:#fff;}
+.ps-qrbox .cap{font-size:11.5px;color:#8a93a5;margin-top:7px;font-family:-apple-system,sans-serif;letter-spacing:1px;}
+.ps-sealbox{text-align:right;padding-bottom:6px;}
+.ps-sealbox img{width:158px;height:158px;display:block;margin-left:auto;}
+.ps-sealbox .cap{font-size:11.5px;color:#8a93a5;margin-top:4px;font-family:-apple-system,sans-serif;letter-spacing:1px;}
+.ps-note{
+  border-top:1px dashed #cfd8e8;padding-top:14px;font-size:12px;color:#7a8598;
+  line-height:1.9;font-family:-apple-system,"PingFang SC",sans-serif;
+}
+.ps-note b{color:#5b6478;}
+.ps-foot{
+  margin-top:12px;display:flex;justify-content:space-between;
+  font-size:11px;color:#a2acbd;font-family:-apple-system,sans-serif;letter-spacing:.5px;
+}
+
+/* ---------- 核验页 ---------- */
+.verify-hero{
+  background:#fff;border-radius:16px;padding:26px 18px;text-align:center;
+  margin-top:14px;border:1px solid #eaeffa;box-shadow:0 6px 20px rgba(20,45,95,.06);
+}
+.verify-icon{font-size:44px;line-height:1;}
+.verify-title{font-size:16px;font-weight:700;margin:12px 0 6px;}
+.verify-sub{font-size:12.5px;color:var(--muted);line-height:1.6;}
+.verify-input{
+  display:flex;gap:8px;margin-top:16px;
+}
+.verify-input input{
+  flex:1;height:48px;border:1.5px solid #e2e8f2;border-radius:12px;
+  padding:0 14px;font-size:15px;font-family:inherit;outline:0;color:var(--text);
+  background:#fafbfe;
+}
+.verify-input input:focus{border-color:#9fc2ff;background:#fff;}
+.verify-input .btn{padding:0 20px;height:48px;}
+
+.result-card{
+  background:#fff;border-radius:16px;padding:18px;margin-top:14px;
+  border:1px solid #eaeffa;box-shadow:0 6px 20px rgba(20,45,95,.06);
+  display:none;
+}
+.result-card.show{display:block;animation:fadeUp .28s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+.result-head{
+  display:flex;align-items:center;gap:10px;padding-bottom:14px;
+  border-bottom:1px solid #f0f4fa;margin-bottom:14px;
+}
+.result-badge{
+  width:40px;height:40px;border-radius:12px;display:flex;align-items:center;
+  justify-content:center;font-size:21px;background:#e8f8f0;
+}
+.result-badge.bad{background:#ffeded;}
+.result-title{font-size:15.5px;font-weight:700;}
+.result-title.bad{color:#e5484d;}
+.result-desc{font-size:12px;color:var(--muted);margin-top:3px;}
+
+/* ---------- 我的 ---------- */
+.list-card{
+  background:#fff;border-radius:16px;margin-top:14px;overflow:hidden;
+  border:1px solid #eaeffa;box-shadow:0 6px 20px rgba(20,45,95,.06);
+}
+.list-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:15px 16px;font-size:14px;border-bottom:1px solid #f4f7fc;gap:12px;
+}
+.list-item:last-child{border-bottom:0;}
+.list-item span{color:#6b7688;flex:0 0 auto;}
+.list-item b{font-weight:600;color:#151b26;text-align:right;word-break:break-all;}
+.list-item.link{cursor:pointer;}
+.list-item.link b{color:#c3cbd8;font-size:19px;font-weight:400;}
+.list-item.link:active{background:#f7f9fd;}
+#v-me .btn.danger{margin-top:18px;height:48px;}
+.ver{text-align:center;font-size:11.5px;color:#b3bccb;margin-top:20px;letter-spacing:.5px;}
+
+/* ---------- 编辑资料 ---------- */
+.form-section{margin-top:14px;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #eaeffa;box-shadow:0 6px 20px rgba(20,45,95,.06);}
+.form-section-title{
+  font-size:12px;color:var(--blue);font-weight:700;letter-spacing:1px;
+  padding:14px 16px 8px;background:#fbfdff;border-bottom:1px solid #f4f7fc;
+  display:flex;align-items:center;gap:6px;
+}
+.form-row{
+  display:flex;align-items:flex-start;gap:12px;padding:12px 16px;
+  border-bottom:1px solid #f4f7fc;
+}
+.form-row:last-child{border-bottom:0;}
+.form-label{
+  width:78px;flex:0 0 auto;font-size:13.5px;color:#6b7688;padding-top:13px;
+  line-height:1.4;
+}
+.form-control{flex:1;display:flex;flex-direction:column;}
+.form-input,.form-select,.form-textarea{
+  border:0;outline:0;background:transparent;font-family:inherit;font-size:14.5px;
+  color:#151b26;width:100%;padding:12px 0;line-height:1.4;
+}
+.form-input::placeholder,.form-textarea::placeholder{color:#c3cbd8;}
+.form-textarea{resize:vertical;min-height:60px;padding-top:13px;}
+.form-select{appearance:none;-webkit-appearance:none;background:
+  url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path fill='%238a93a5' d='M6 8L2 4h8z'/></svg>") right center/12px 12px no-repeat;
+  padding-right:18px;}
+.form-select:disabled{color:#a8b0bf;}
+.form-hint{font-size:11.5px;color:#b3bccb;margin-top:4px;line-height:1.4;}
+.form-divider{height:1px;background:#f4f7fc;margin:0 16px;}
+
+/* 头像上传 */
+.avatar-block{
+  display:flex;align-items:center;gap:16px;padding:18px 16px;
+  background:linear-gradient(135deg,#f6f9ff,#eef3ff);
+}
+.avatar-picker{
+  width:78px;height:78px;border-radius:50%;flex:0 0 auto;overflow:hidden;
+  background:linear-gradient(160deg,#dbe5f5,#c3d4ee);border:2px solid #fff;
+  box-shadow:0 6px 16px rgba(26,110,255,.18);position:relative;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+}
+.avatar-picker img{width:100%;height:100%;object-fit:cover;display:block;}
+.avatar-picker .ph{
+  font-size:30px;color:#6b8cd6;font-weight:700;
+}
+.avatar-picker .cam{
+  position:absolute;right:2px;bottom:2px;width:24px;height:24px;border-radius:50%;
+  background:#1A6EFF;color:#fff;font-size:13px;display:flex;align-items:center;
+  justify-content:center;border:2px solid #fff;line-height:1;
+}
+.avatar-info{flex:1;}
+.avatar-info .t{font-size:14.5px;font-weight:700;color:#151b26;}
+.avatar-info .s{font-size:12px;color:#8a93a5;margin-top:4px;line-height:1.5;}
+
+.avatar-preview-big{
+  width:140px;height:180px;border-radius:8px;overflow:hidden;
+  background:linear-gradient(160deg,#f0f3f9,#dfe6f2);border:1px solid #e0e6f1;
+  display:flex;align-items:center;justify-content:center;margin:0 auto;
+  position:relative;cursor:pointer;
+}
+.avatar-preview-big img{width:100%;height:100%;object-fit:cover;display:block;}
+.avatar-preview-big .ph{color:#c3cbdb;}
+.avatar-preview-big .tip{
+  position:absolute;bottom:6px;left:0;right:0;text-align:center;
+  font-size:10px;color:#8a93a5;background:rgba(255,255,255,.85);padding:3px 0;
+}
+
+/* 隐藏文件输入：用裁剪而非离屏定位，确保移动端 WebView 中程序式 .click() 不被拦截 */
+input[type=file].hidden-file{
+  position:fixed;
+  left:0;top:0;
+  width:100%;height:100%;
+  opacity:0;
+  pointer-events:none;
+  z-index:-1;
+  -webkit-appearance:none;
+}
+
+/* 体检项目 chip */
+.chip-group{display:flex;flex-wrap:wrap;gap:6px;padding-top:6px;}
+.chip{
+  font-size:12px;padding:5px 10px;border-radius:99px;background:#eef3ff;
+  color:#0d4fc4;border:1px solid #d6e2ff;cursor:default;
+}
+
+/* 提交按钮区 */
+.form-actions{
+  display:flex;gap:10px;padding:14px;
+}
+.form-actions .btn{flex:1;}
+
+/* 拍照弹窗 */
+.capture-sheet{
+  position:fixed;left:0;right:0;bottom:0;z-index:1001;
+  background:#fff;border-radius:18px 18px 0 0;padding:8px 0 calc(8px + env(safe-area-inset-bottom));
+  transform:translateY(100%);transition:transform .28s cubic-bezier(.22,.8,.27,1);
+  box-shadow:0 -8px 30px rgba(0,0,0,.18);
+}
+.capture-sheet.show{transform:none;}
+.capture-mask{position:fixed;inset:0;background:rgba(10,20,40,.55);z-index:1000;display:none;}
+.capture-mask.show{display:block;animation:fade .2s ease;}
+.capture-item{
+  display:block;
+  padding:14px 16px;font-size:15px;text-align:center;cursor:pointer;
+  border-bottom:1px solid #f4f7fc;color:#151b26;
+  -webkit-tap-highlight-color:transparent;
+  text-decoration:none;
+}
+.capture-item:last-child{border-bottom:0;}
+.capture-item.cam{color:var(--blue);font-weight:600;}
+.capture-item.album{color:#151b26;}
+.capture-item.cancel{color:#8a93a5;border-top:8px solid #f2f4f8;margin-top:6px;}
+
+/* ---------- 底部 Tab ---------- */
+.tabbar{
+  flex:0 0 auto;display:flex;background:#fff;border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom);z-index:20;
+}
+.tab{
+  flex:1;border:0;background:transparent;padding:8px 0 9px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  color:#98a2b3;font-size:11px;font-family:inherit;letter-spacing:.4px;
+}
+.tab i{font-size:19px;font-style:normal;line-height:1;filter:grayscale(1);opacity:.55;}
+.tab.active{color:var(--blue);font-weight:600;}
+.tab.active i{filter:none;opacity:1;}
+
+/* ---------- 弹窗 / Toast ---------- */
+.modal{
+  position:fixed;inset:0;background:rgba(10,20,40,.62);z-index:999;
+  display:none;align-items:center;justify-content:center;padding:24px;
+  backdrop-filter:blur(3px);
+}
+.modal.show{display:flex;animation:fade .2s ease;}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.modal-card{
+  width:100%;max-width:330px;background:#fff;border-radius:20px;
+  padding:22px 22px 20px;text-align:center;
+  animation:pop .26s cubic-bezier(.2,.9,.3,1.2);
+}
+@keyframes pop{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:16px;letter-spacing:.6px;}
+.modal-qr{
+  width:210px;height:210px;margin:0 auto;border:1px solid #eaeffa;
+  border-radius:14px;padding:8px;background:#fff;
+}
+.modal-qr img,.modal-qr canvas{width:100%!important;height:100%!important;display:block;}
+.modal-no{font-size:12px;color:var(--muted);margin:14px 0 18px;}
+
+.toast{
+  position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.9);
+  background:rgba(20,28,45,.9);color:#fff;padding:12px 22px;border-radius:12px;
+  font-size:14px;z-index:1000;opacity:0;pointer-events:none;
+  transition:opacity .22s,transform .22s;max-width:80%;text-align:center;line-height:1.5;
+}
+.toast.show{opacity:1;transform:translate(-50%,-50%) scale(1);}
+
+/* ---------- 打印 ---------- */
+@media print{
+  @page{size:A4;margin:14mm;}
+  html,body{height:auto!important;overflow:visible!important;background:#fff!important;display:block!important;}
+  .app{max-width:none!important;height:auto!important;box-shadow:none!important;background:#fff!important;display:block!important;overflow:visible!important;}
+  .views{overflow:visible!important;position:static!important;height:auto!important;}
+  .view{position:static!important;display:none!important;overflow:visible!important;}
+  #v-print{display:block!important;}
+  .navbar,.tabbar,.bottom-bar,.print-hint,.toast,.modal{display:none!important;}
+  .scroll{overflow:visible!important;height:auto!important;padding:0!important;}
+  .print-scroll{padding:0!important;background:#fff!important;}
+  .a4-preview{
+    width:auto!important;height:auto!important;padding:0!important;
+    box-shadow:none!important;border-radius:0!important;background:#fff!important;
+    overflow:visible!important;
+  }
+  #printSheet{
+    position:static!important;transform:none!important;
+    width:100%!important;height:auto!important;min-height:0!important;
+    padding:0!important;box-shadow:none!important;border:0!important;
+    display:block!important;
+  }
+  .ps-mid{flex:none!important;padding:26px 6px 18px!important;}
+}
+</style>
+</head>
+<body>
+<!-- 启动闪屏 -->
+<div id="splash">
+  <div class="splash-logo">粤</div>
+  <div class="splash-title">粤康证</div>
+  <div class="splash-sub">广东省食品从业人员健康证明</div>
+  <div class="splash-spinner"></div>
+</div>
+
+<div class="app" id="app">
+  <div class="views" id="views">
+
+    <!-- ================= 登录 ================= -->
+    <section class="view active" id="v-login">
+      <div class="login-inner">
+        <div class="logo-badge">粤</div>
+        <h1 class="login-title">粤康证</h1>
+        <p class="login-sub">广东省食品从业人员健康证明</p>
+
+        <div class="field">
+          <span class="field-ico">📱</span>
+          <input id="in-phone" type="tel" maxlength="11" placeholder="请输入手机号" value="13800138000">
+        </div>
+        <div class="field">
+          <span class="field-ico">🔒</span>
+          <input id="in-code" type="tel" maxlength="6" placeholder="请输入验证码">
+          <button class="code-btn" id="btn-code">获取验证码</button>
+        </div>
+        <button class="btn primary block" id="btn-login">登 录 / 注 册</button>
+        <p class="login-tip">演示环境 · 任意手机号 + 验证码 <b>123456</b></p>
+      </div>
+    </section>
+
+    <!-- ================= 首页 ================= -->
+    <section class="view" id="v-home">
+      <div class="hero">
+        <div class="hero-row">
+          <div>
+            <div class="hero-title">我的健康证</div>
+            <div class="hero-sub">电子证照 · 与纸质版同等效力</div>
+          </div>
+          <div class="hero-avatar" id="heroAvatar">张</div>
+        </div>
+      </div>
+
+      <div class="scroll">
+        <div class="notice ok" id="notice">加载中…</div>
+
+        <div class="cert-card">
+          <div class="cert-head">
+            <div class="cert-emblem">粤</div>
+            <div>
+              <div class="cert-head-title">广东省食品从业人员健康证明</div>
+              <div class="cert-head-sub">Guangdong Food Practitioner Health Certificate</div>
+            </div>
+          </div>
+
+          <div class="cert-main">
+            <div class="cert-photo" id="certPhoto">
+              <svg viewBox="0 0 24 24" width="34" height="34" fill="#c3cbdb">
+                <path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5z"/>
+              </svg>
+            </div>
+            <div class="cert-rows">
+              <div class="crow"><span>姓　名</span><b id="c-name">--</b></div>
+              <div class="crow"><span>性　别</span><b id="c-gender">--</b></div>
+              <div class="crow"><span>年　龄</span><b id="c-age">--</b></div>
+              <div class="crow"><span>证件编号</span><b id="c-no" class="mono">--</b></div>
+            </div>
+          </div>
+
+          <div class="cert-meta">
+            <div class="crow"><span>从业类别</span><b id="c-type">--</b></div>
+            <div class="crow"><span>体检结果</span><b id="c-result" class="ok">--</b></div>
+            <div class="crow"><span>有效期至</span><b id="c-end">--</b></div>
+            <div class="crow"><span>发证机关</span><b id="c-org">--</b></div>
+          </div>
+
+          <div class="cert-foot">
+            <div class="qr-wrap" id="homeQr"></div>
+            <div class="seal-wrap"><img id="homeSeal" alt="电子印章"></div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn primary" onclick="go('v-print')">🖨 打印健康证</button>
+          <button class="btn ghost" onclick="openQr()">▣ 出示二维码</button>
+        </div>
+
+        <div class="tips-card">
+          <div class="tips-title">温馨提示</div>
+          <ul>
+            <li>电子健康证与纸质证照具有同等法律效力，可直接出示或打印使用。</li>
+            <li>健康证有效期一年，到期前 30 天请及时办理续期。</li>
+            <li>打印时请使用 A4 纸张，保持二维码与印章清晰完整。</li>
+          </ul>
+        </div>
+        <div class="safe-bottom"></div>
+      </div>
+    </section>
+
+    <!-- ================= 打印预览 ================= -->
+    <section class="view" id="v-print">
+      <div class="navbar">
+        <button class="nav-back" onclick="go('v-home',{dir:'back'})">‹</button>
+        <div class="nav-title">打印预览</div>
+        <div class="nav-pad"></div>
+      </div>
+
+      <div class="scroll print-scroll">
+        <div class="a4-preview" id="a4Preview">
+          <div class="print-sheet" id="printSheet">
+            <div class="ps-top">
+              <div class="ps-org">广东省卫生健康委员会</div>
+              <div class="ps-title">健康证明</div>
+              <div class="ps-en">Guangdong Food Practitioner Health Certificate</div>
+            </div>
+
+            <div class="ps-no">
+              <div>证件编号：<span class="val mono" id="ps-no">--</span></div>
+              <div>签发日期：<span id="ps-issue">--</span></div>
+            </div>
+
+            <table class="ps-table">
+              <tr>
+                <td class="k">姓　名</td><td class="v" id="ps-name">--</td>
+                <td class="k">性　别</td><td class="v" id="ps-gender">--</td>
+                <td class="k">年　龄</td><td class="v" id="ps-age">--</td>
+              </tr>
+              <tr>
+                <td class="k">身份证号</td><td class="v mono" colspan="3" id="ps-idcard">--</td>
+                <td class="k">从业类别</td><td class="v" id="ps-type">--</td>
+              </tr>
+              <tr>
+                <td class="k">体检日期</td><td class="v" id="ps-check">--</td>
+                <td class="k">体检结果</td><td class="v hl" id="ps-result">--</td>
+                <td class="k">发证日期</td><td class="v" id="ps-start">--</td>
+              </tr>
+              <tr>
+                <td class="k">有效期至</td><td class="v hl" colspan="3" id="ps-end">--</td>
+                <td class="k">发证机关</td><td class="v" id="ps-org">--</td>
+              </tr>
+            </table>
+
+            <div class="ps-mid">
+              <div class="ps-qrbox">
+                <img id="psQr" alt="核验二维码">
+                <div class="cap">扫 码 核 验 真 伪</div>
+              </div>
+              <div class="ps-sealbox">
+                <img id="psSeal" alt="电子印章">
+                <div class="cap">发证机关（电子印章）</div>
+              </div>
+            </div>
+
+            <div class="ps-note">
+              <b>使用说明：</b>1. 本证明由广东省食品从业人员健康检查管理平台统一签发，电子证照与纸质证照具有同等法律效力。
+              2. 扫描左侧二维码可在线核验证照真伪及有效状态。3. 本证明涂改、复印无效，有效期届满自动失效。
+              4. 举报咨询电话：12345。
+            </div>
+            <div class="ps-foot">
+              <span>核验地址：wsjkw.gd.gov.cn/hcert</span>
+              <span id="ps-printtime">打印时间：--</span>
+            </div>
+          </div>
+        </div>
+        <div class="print-hint">预览为 A4 版式，点击「立即打印」可打印或另存为 PDF</div>
+        <div class="safe-bottom"></div>
+      </div>
+
+      <div class="bottom-bar">
+        <button class="btn ghost" onclick="go('v-home',{dir:'back'})">返 回</button>
+        <button class="btn primary" onclick="doPrint()">立即打印</button>
+      </div>
+    </section>
+
+    <!-- ================= 核验 ================= -->
+    <section class="view" id="v-verify">
+      <div class="navbar">
+        <div class="nav-pad"></div>
+        <div class="nav-title">证照核验</div>
+        <div class="nav-pad"></div>
+      </div>
+
+      <div class="scroll">
+        <div class="verify-hero">
+          <div class="verify-icon">🔍</div>
+          <div class="verify-title">健康证真伪核验</div>
+          <div class="verify-sub">输入证件编号，或扫描健康证上的二维码<br>即时查验证照真伪与有效状态</div>
+
+          <div class="verify-input">
+            <input id="in-verify" placeholder="请输入证件编号" autocomplete="off">
+            <button class="btn primary" onclick="doVerify()">核 验</button>
+          </div>
+        </div>
+
+        <div class="result-card" id="resultCard"></div>
+
+        <div class="tips-card">
+          <div class="tips-title">核验说明</div>
+          <ul>
+            <li>核验结果实时对接广东省健康证数据平台。</li>
+            <li>如显示「已过期」或「未查询到」，请持证人重新办理。</li>
+            <li>任何单位和个人不得伪造、变造健康证明。</li>
+          </ul>
+        </div>
+        <div class="safe-bottom"></div>
+      </div>
+    </section>
+
+    <!-- ================= 我的 ================= -->
+    <section class="view" id="v-me">
+      <div class="hero small">
+        <div class="hero-row">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div class="hero-avatar big" id="meAvatar">张</div>
+            <div>
+              <div class="hero-title" id="meName">--</div>
+              <div class="hero-sub" id="mePhone">--</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="scroll">
+        <div class="list-card">
+          <div class="list-item"><span>身份证号</span><b class="mono" id="me-idcard">--</b></div>
+          <div class="list-item"><span>从业类别</span><b id="me-type">--</b></div>
+          <div class="list-item"><span>证件编号</span><b class="mono" id="me-no">--</b></div>
+          <div class="list-item"><span>发证机关</span><b id="me-org">--</b></div>
+        </div>
+
+        <div class="list-card">
+          <div class="list-item link" onclick="go('v-edit')"><span>编辑资料 / 上传头像</span><b>›</b></div>
+          <div class="list-item link" onclick="go('v-print')"><span>打印健康证</span><b>›</b></div>
+          <div class="list-item link" onclick="openQr()"><span>出示核验二维码</span><b>›</b></div>
+          <div class="list-item link" onclick="resetCert()"><span>重新生成证照数据</span><b>›</b></div>
+        </div>
+
+        <button class="btn danger block" onclick="logout()">退出登录</button>
+        <div class="ver">粤康证 v1.0.0 · 演示版</div>
+        <div class="safe-bottom"></div>
+      </div>
+    </section>
+
+    <!-- ================= 编辑资料 ================= -->
+    <section class="view" id="v-edit">
+      <div class="navbar">
+        <button class="nav-back" onclick="go('v-me',{dir:'back'})">‹</button>
+        <div class="nav-title">编辑资料</div>
+        <div class="nav-pad"></div>
+      </div>
+
+      <div class="scroll" style="padding:0 14px;">
+        <!-- 头像上传 -->
+        <div class="form-section" style="margin-top:14px;">
+          <div class="avatar-block">
+            <div class="avatar-picker" id="avatarPicker" onclick="openCapture()">
+              <span class="ph" id="avatarPh">张</span>
+              <span class="cam">📷</span>
+            </div>
+            <div class="avatar-info">
+              <div class="t">证件照片 / 头像</div>
+              <div class="s">点击上传近期免冠彩色照片<br>建议尺寸 358×441 px，白底</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 基本信息 -->
+        <div class="form-section">
+          <div class="form-section-title">📋 基本信息</div>
+          <div class="form-row">
+            <div class="form-label">姓　名</div>
+            <div class="form-control"><input class="form-input" id="f-name" placeholder="请输入姓名"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-label">性　别</div>
+            <div class="form-control">
+              <select class="form-select" id="f-gender">
+                <option value="男">男</option>
+                <option value="女">女</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-label">出生日期</div>
+            <div class="form-control"><input class="form-input" id="f-birthDate" type="date"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-label">民　族</div>
+            <div class="form-control"><input class="form-input" id="f-ethnicity" placeholder="如：汉族"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-label">身份证号</div>
+            <div class="form-control">
+              <input class="form-input mono" id="f-idCard" placeholder="18 位身份证号" maxlength="18">
+              <div class="form-hint">用于核验身份，请如实填写</div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-label">联系电话</div>
+            <div class="form-control"><input class="form-input" id="f-phone" type="tel" maxlength="11" placeholder="11 位手机号"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-label">户籍地址</div>
+            <div class="form-control"><input class="form-input" id="f-nativePlace" placeholder="省市区"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-label">现居地址</div>
+            <div class="form-control"><input class="form-input" id="f-address" placeholder="详细地址"></div>
+          </div>
+        </div>
+
+        <!-- 从业信息 -->
+        <div class="form-section">
+          <div class="form-section-title">💼 从业信息</div>
+          <div class="form-row">
+            <div class="form-label">工作单位</div>
+            <div class="form-control"><input class="form-input" id="f-workUnit" placeholder="单位全称"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-label">从业类别</div>
+            <div class="form-control">
+              <select class="form-select" id="f-workType">
+                <option value="餐饮服务">餐饮服务</option>
+                <option value="食品销售">食品销售</option>
+                <option value="食品生产">食品生产</option>
+                <option value="集体食堂">集体食堂</option>
+                <option value="食品流通">食品流通</option>
+                <option value="直接入口食品">直接入口食品</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-label">岗位/工种</div>
+            <div class="form-control"><input class="form-input" id="f-workPosition" placeholder="如：厨师、服务员、配送员"></div>
+          </div>
+        </div>
+
+        <!-- 体检信息 -->
+        <div class="form-section">
+          <div class="form-section-title">🩺 体检信息</div>
+          <div class="form-row">
+            <div class="form-label">体检机构</div>
+            <div class="form-control"><input class="form-input" id="f-checkOrg" placeholder="如：广州市天河区人民医院"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-label">体检日期</div>
+            <div class="form-control"><input class="form-input" id="f-checkDate" type="date"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-label">体检项目</div>
+            <div class="form-control">
+              <div class="chip-group">
+                <span class="chip">胸部X线</span>
+                <span class="chip">肠道致病菌</span>
+                <span class="chip">皮肤病</span>
+                <span class="chip">HAV-IgM/HEV-IgM</span>
+                <span class="chip">手部微生物</span>
+              </div>
+              <div class="form-hint" style="margin-top:6px;">依据《广东省食品从业人员健康检查项目目录》</div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-label">体检结果</div>
+            <div class="form-control">
+              <select class="form-select" id="f-checkResult">
+                <option value="合格">合格</option>
+                <option value="不合格">不合格</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-label">检查结论</div>
+            <div class="form-control">
+              <textarea class="form-textarea" id="f-conclusion" placeholder="体检医生结论"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- 证照信息 -->
+        <div class="form-section">
+          <div class="form-section-title">📜 证照信息</div>
+          <div class="form-row">
+            <div class="form-label">证件编号</div>
+            <div class="form-control"><input class="form-input mono" id="f-certNo" placeholder="JKZ44010020260001"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-label">发证日期</div>
+            <div class="form-control"><input class="form-input" id="f-startTime" type="date"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-label">有效期至</div>
+            <div class="form-control"><input class="form-input" id="f-endTime" type="date"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-label">发证机关</div>
+            <div class="form-control"><input class="form-input" id="f-issueOrg" placeholder="如：广州市天河区卫生健康局"></div>
+          </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="form-actions">
+          <button class="btn ghost" onclick="resetEditForm()">重置</button>
+          <button class="btn primary" onclick="saveEditForm()">保存资料</button>
+        </div>
+        <div class="safe-bottom"></div>
+      </div>
+    </section>
+
+  </div>
+
+  <nav class="tabbar" id="tabbar" style="display:none">
+    <button class="tab active" data-view="v-home"><i>🪪</i><span>健康证</span></button>
+    <button class="tab" data-view="v-verify"><i>🔍</i><span>核验</span></button>
+    <button class="tab" data-view="v-me"><i>👤</i><span>我的</span></button>
+  </nav>
+</div>
+
+<!-- 二维码弹窗 -->
+<div class="modal" id="qrModal" onclick="closeQr()">
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <div class="modal-title">出示二维码核验</div>
+    <div class="modal-qr" id="modalQr"></div>
+    <div class="modal-no mono" id="modalNo">--</div>
+    <button class="btn primary block" onclick="closeQr()">关 闭</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- 隐藏的文件输入：拍照 / 相册 -->
+<input type="file" id="fileCam" class="hidden-file" accept="image/*" capture="user">
+<input type="file" id="fileAlbum" class="hidden-file" accept="image/*">
+
+<!-- 选择来源底部弹窗：用 label[for] 原生关联 file input，最稳定 -->
+<div class="capture-mask" id="captureMask" onclick="closeCapture()"></div>
+<div class="capture-sheet" id="captureSheet">
+  <label for="fileCam" class="capture-item cam" onclick="closeCapture()">📷 拍照上传</label>
+  <label for="fileAlbum" class="capture-item album" onclick="closeCapture()">🖼 从相册选择</label>
+  <div class="capture-item cancel" onclick="closeCapture()">取 消</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script>
+/* =========================================================
+   粤康证 · 电子健康证  ——  核心逻辑
+   ========================================================= */
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+
+/* ---------- 本地存储 ---------- */
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
+  del(k){ try{ localStorage.removeItem(k); }catch(e){} }
+};
+
+/* ---------- 工具 ---------- */
+function pad(n){ return n < 10 ? '0'+n : ''+n; }
+function fmtDate(d){ return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); }
+function fmtDateTime(d){
+  return fmtDate(d) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+}
+function toast(msg, ms){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), ms || 1800);
+}
+
+/* ---------- 证照数据 ---------- */
+/* 广东健康证完整字段（参考《广东省食品从业人员健康检查管理规范》） */
+function buildDefaultCert(){
+  const today = new Date();
+  const issue = new Date(today); issue.setDate(issue.getDate() - 3);
+  const end   = new Date(issue); end.setFullYear(end.getFullYear() + 1);
+  return {
+    /* 基本信息 */
+    name: '张三',
+    gender: '男',
+    birthDate: '1998-06-15',
+    age: 28,
+    ethnicity: '汉族',
+    idCard: '440106199806151234',
+    phone: '13800138000',
+    nativePlace: '广东省广州市天河区',
+    address: '广东省广州市天河区天河北路 668 号',
+
+    /* 从业信息 */
+    workUnit: '广州市天河区XX餐饮管理有限公司',
+    workType: '餐饮服务',
+    workPosition: '厨师',
+
+    /* 体检信息 */
+    checkOrg: '广州市天河区人民医院',
+    checkOrgCode: '12440106MB2CXXXXXX',
+    checkDate: fmtDate(today),
+    checkItems: '胸部X线、肠道致病菌、皮肤病、HAV-IgM/HEV-IgM、手部微生物',
+    checkResult: '合格',
+    conclusion: '未发现本人在患痢疾、伤寒、病毒性肝炎等消化道传染病，以及活动性肺结核、化脓性或渗出性皮肤病等有碍食品卫生的疾病。',
+
+    /* 证照信息 */
+    certNo: 'JKZ44010020260001',
+    startTime: fmtDate(issue),
+    endTime: fmtDate(end),
+    issueOrg: '广州市天河区卫生健康局',
+
+    /* 头像（base64，留空则用首字母占位） */
+    avatar: ''
+  };
+}
+function getCert(){
+  let c = store.get('ykz_cert', null);
+  if (!c) { c = buildDefaultCert(); store.set('ykz_cert', c); }
+  return c;
+}
+function resetCert(){
+  store.set('ykz_cert', buildDefaultCert());
+  renderAll();
+  initSealAndQr();
+  toast('已重新生成证照数据');
+}
+
+/* ---------- 编辑资料表单 ---------- */
+function fillEditForm(){
+  const c = getCert();
+  $('#f-name').value         = c.name || '';
+  $('#f-gender').value      = c.gender || '男';
+  $('#f-birthDate').value   = c.birthDate || '';
+  $('#f-ethnicity').value   = c.ethnicity || '';
+  $('#f-idCard').value      = c.idCard || '';
+  $('#f-phone').value       = c.phone || '';
+  $('#f-nativePlace').value = c.nativePlace || '';
+  $('#f-address').value     = c.address || '';
+  $('#f-workUnit').value     = c.workUnit || '';
+  $('#f-workType').value     = c.workType || '餐饮服务';
+  $('#f-workPosition').value= c.workPosition || '';
+  $('#f-checkOrg').value     = c.checkOrg || '';
+  $('#f-checkDate').value    = c.checkDate || '';
+  $('#f-checkResult').value  = c.checkResult || '合格';
+  $('#f-conclusion').value   = c.conclusion || '';
+  $('#f-certNo').value       = c.certNo || '';
+  $('#f-startTime').value    = c.startTime || '';
+  $('#f-endTime').value      = c.endTime || '';
+  $('#f-issueOrg').value     = c.issueOrg || '';
+
+  // 头像预览
+  const picker = $('#avatarPicker');
+  if (c.avatar){
+    picker.innerHTML = '<img src="' + c.avatar + '"><span class="cam">📷</span>';
+  } else {
+    picker.innerHTML = '<span class="ph">' + (c.name ? c.name.charAt(0) : '人') + '</span><span class="cam">📷</span>';
+  }
+}
+
+function saveEditForm(){
+  const c = getCert();
+  const newName = $('#f-name').value.trim();
+  if (!newName){ toast('请填写姓名'); return; }
+  const newIdCard = $('#f-idCard').value.trim();
+  if (newIdCard && !/^\d{17}[\dXx]$/.test(newIdCard)){
+    toast('身份证号格式有误（18 位）'); return;
+  }
+  const newPhone = $('#f-phone').value.trim();
+  if (newPhone && !/^1\d{10}$/.test(newPhone)){
+    toast('手机号格式有误（11 位）'); return;
+  }
+
+  // 计算年龄
+  const bd = $('#f-birthDate').value;
+  let age = c.age;
+  if (bd){
+    const d = new Date(bd);
+    const today = new Date();
+    age = today.getFullYear() - d.getFullYear();
+    const m = today.getMonth() - d.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < d.getDate())) age--;
+    if (age < 0 || age > 120) age = c.age;
+  }
+
+  // 合并保存（保留原头像）
+  const updated = {
+    name: newName,
+    gender: $('#f-gender').value,
+    birthDate: bd,
+    age: age,
+    ethnicity: $('#f-ethnicity').value.trim(),
+    idCard: newIdCard,
+    phone: newPhone,
+    nativePlace: $('#f-nativePlace').value.trim(),
+    address: $('#f-address').value.trim(),
+    workUnit: $('#f-workUnit').value.trim(),
+    workType: $('#f-workType').value,
+    workPosition: $('#f-workPosition').value.trim(),
+    checkOrg: $('#f-checkOrg').value.trim(),
+    checkOrgCode: c.checkOrgCode,
+    checkDate: $('#f-checkDate').value || fmtDate(new Date()),
+    checkItems: c.checkItems,
+    checkResult: $('#f-checkResult').value,
+    conclusion: $('#f-conclusion').value.trim(),
+    certNo: $('#f-certNo').value.trim() || c.certNo,
+    startTime: $('#f-startTime').value || c.startTime,
+    endTime: $('#f-endTime').value || c.endTime,
+    issueOrg: $('#f-issueOrg').value.trim() || c.issueOrg,
+    issueOrgCode: c.issueOrgCode,
+    avatar: c.avatar
+  };
+
+  store.set('ykz_cert', updated);
+  if (newPhone) store.set('ykz_phone', newPhone);
+
+  renderAll();
+  initSealAndQr();
+  toast('资料保存成功');
+  setTimeout(() => go('v-me', {dir:'back'}), 400);
+}
+
+function resetEditForm(){
+  if (!confirm('确定重置为当前证照数据？未保存的修改将丢失。')) return;
+  fillEditForm();
+  toast('已重置表单');
+}
+
+/* ---------- 头像上传 ---------- */
+function openCapture(){
+  $('#captureMask').classList.add('show');
+  $('#captureSheet').classList.add('show');
+}
+function closeCapture(){
+  $('#captureMask').classList.remove('show');
+  $('#captureSheet').classList.remove('show');
+}
+
+/* 触发文件选择：必须在用户手势内同步调用，避免移动端 WebView 拦截 */
+function pickImage(id){
+  const input = document.getElementById(id);
+  if (!input){ toast('文件选择器初始化失败'); return; }
+  try{
+    input.value = '';       // 清空以允许重复选同一文件
+    input.click();          // 同步触发，保留用户手势
+  }catch(e){
+    toast('当前环境不支持文件选择：' + e.message);
+    return;
+  }
+  closeCapture();           // 触发后再关弹窗
+}
+
+function handleAvatarFile(file){
+  if (!file){ return; }
+  if (!file.type.startsWith('image/')){ toast('请选择图片文件'); return; }
+  if (file.size > 5 * 1024 * 1024){ toast('图片过大，请小于 5MB'); return; }
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    const dataUrl = e.target.result;
+    // 压缩到合适尺寸（最长边 480）
+    const img = new Image();
+    img.onload = () => {
+      const maxSide = 480;
+      let w = img.width, h = img.height;
+      if (w > h && w > maxSide){ h = Math.round(h * maxSide / w); w = maxSide; }
+      else if (h > maxSide){ w = Math.round(w * maxSide / h); h = maxSide; }
+      const cv = document.createElement('canvas');
+      cv.width = w; cv.height = h;
+      cv.getContext('2d').drawImage(img, 0, 0, w, h);
+      const compressed = cv.toDataURL('image/jpeg', 0.85);
+
+      // 写入证照数据（未保存前先暂存在 cert，方便预览）
+      const c = getCert();
+      c.avatar = compressed;
+      store.set('ykz_cert', c);
+
+      // 更新编辑页头像预览
+      const picker = $('#avatarPicker');
+      picker.innerHTML = '<img src="' + compressed + '"><span class="cam">📷</span>';
+      toast('头像已上传，记得点「保存资料」');
+    };
+    img.src = dataUrl;
+  };
+  reader.readAsDataURL(file);
+}
+
+document.getElementById('fileCam').addEventListener('change', e => {
+  handleAvatarFile(e.target.files[0]);
+  e.target.value = '';
+});
+document.getElementById('fileAlbum').addEventListener('change', e => {
+  handleAvatarFile(e.target.files[0]);
+  e.target.value = '';
+});
+function verifyUrl(){
+  return 'https://wsjkw.gd.gov.cn/hcert/v/' + getCert().certNo;
+}
+
+/* =========================================================
+   一、电子印章（纯 Canvas 绘制）
+   ========================================================= */
+function drawStarPath(ctx, cx, cy, spikes, outerR, innerR){
+  let rot = -Math.PI / 2;
+  const step = Math.PI / spikes;
+  ctx.beginPath();
+  for (let i = 0; i < spikes; i++){
+    ctx.lineTo(cx + Math.cos(rot) * outerR, cy + Math.sin(rot) * outerR);
+    rot += step;
+    ctx.lineTo(cx + Math.cos(rot) * innerR, cy + Math.sin(rot) * innerR);
+    rot += step;
+  }
+  ctx.closePath();
+}
+
+function drawArcText(ctx, text, cx, cy, radius, centerAngle, dir, fontSize, color){
+  const chars = Array.from(text);
+  const n = chars.length;
+  const spread = Math.min(Math.PI * 1.25, (n * fontSize * 1.08) / radius);
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.font = 'bold ' + fontSize + 'px "Songti SC","SimSun","STSong",serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for (let i = 0; i < n; i++){
+    const t = n === 1 ? 0 : (i / (n - 1)) - 0.5;
+    let a, rot;
+    if (dir === 'top'){
+      a = centerAngle + t * spread;
+      rot = a + Math.PI / 2;
+    } else {
+      a = centerAngle - t * spread;
+      rot = -(a - centerAngle);
+    }
+    ctx.save();
+    ctx.translate(cx + radius * Math.cos(a), cy + radius * Math.sin(a));
+    ctx.rotate(rot);
+    ctx.fillText(chars[i], 0, 0);
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+function drawSeal(ctx, size, orgName, bottomText){
+  const RED = '#cf0a1e';
+  ctx.clearRect(0, 0, size, size);
+  const cx = size / 2, cy = size / 2;
+  const R  = size / 2 - size * 0.035;
+
+  // 外圈
+  ctx.strokeStyle = RED;
+  ctx.lineWidth = size * 0.016;
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
+
+  // 内圈细线
+  ctx.lineWidth = size * 0.006;
+  ctx.beginPath(); ctx.arc(cx, cy, R * 0.80, 0, Math.PI * 2); ctx.stroke();
+
+  // 五角星
+  ctx.fillStyle = RED;
+  const starR = size * 0.098;
+  drawStarPath(ctx, cx, cy, 5, starR, starR * 0.42);
+  ctx.fill();
+
+  // 上方弧形文字：发证机构
+  const fs = size * 0.088;
+  drawArcText(ctx, orgName, cx, cy, R * 0.90, -Math.PI / 2, 'top', fs, RED);
+
+  // 下方弧形文字：专用章
+  drawArcText(ctx, bottomText, cx, cy, R * 0.90, Math.PI / 2, 'bottom', fs * 0.95, RED);
+}
+
+let sealDataUrl = '';
+
+function buildSeal(){
+  const S = 520;
+  const cv = document.createElement('canvas');
+  cv.width = S; cv.height = S;
+  const ctx = cv.getContext('2d');
+  const c = getCert();
+  drawSeal(ctx, S, c.issueOrg, '健康证明专用章');
+  sealDataUrl = cv.toDataURL('image/png');
+  return sealDataUrl;
+}
+
+/* =========================================================
+   二、二维码生成
+   ========================================================= */
+let qrDataUrl = '';
+
+function buildQr(){
+  const text = verifyUrl();
+  const tmp = document.createElement('div');
+  tmp.style.cssText = 'position:fixed;left:-9999px;top:0;';
+  document.body.appendChild(tmp);
+
+  if (typeof QRCode !== 'undefined'){
+    try{
+      new QRCode(tmp, {
+        text: text,
+        width: 360,
+        height: 360,
+        colorDark: '#101828',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+      setTimeout(() => {
+        const cv = tmp.querySelector('canvas');
+        if (cv){
+          qrDataUrl = cv.toDataURL('image/png');
+          // 首页缩略二维码：直接搬走这个 canvas
+          const home = $('#homeQr');
+          if (home){
+            home.innerHTML = '';
+            cv.style.width = '100%';
+            cv.style.height = '100%';
+            cv.style.display = 'block';
+            home.appendChild(cv);
+          }
+          const psQr = $('#psQr');
+          if (psQr) psQr.src = qrDataUrl;
+        } else {
+          fallbackQrImage(tmp, text);
+        }
+        if (tmp.parentNode) document.body.removeChild(tmp);
+      }, 90);
+      return;
+    }catch(e){ /* 落到图片兜底 */ }
+  }
+  fallbackQrImage(tmp, text);
+}
+
+function fallbackQrImage(tmp, text){
+  const url = 'https://api.qrserver.com/v1/create-qr-code/?size=360x360&data=' + encodeURIComponent(text);
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => {
+    try{
+      const cv = document.createElement('canvas');
+      cv.width = img.naturalWidth; cv.height = img.naturalHeight;
+      cv.getContext('2d').drawImage(img, 0, 0);
+      qrDataUrl = cv.toDataURL('image/png');
+    }catch(e){ qrDataUrl = url; }
+    const psQr = $('#psQr'); if (psQr) psQr.src = qrDataUrl;
+    const home = $('#homeQr');
+    if (home){ home.innerHTML = ''; home.appendChild(img); img.style.width = '100%'; img.style.height = '100%'; }
+    if (tmp && tmp.parentNode) document.body.removeChild(tmp);
+  };
+  img.onerror = () => { if (tmp && tmp.parentNode) document.body.removeChild(tmp); };
+  img.src = url;
+}
+
+/* =========================================================
+   三、渲染
+   ========================================================= */
+function renderAll(){
+  const c = getCert();
+
+  // 首页
+  $('#c-name').textContent   = c.name;
+  $('#c-gender').textContent = c.gender;
+  $('#c-age').textContent    = c.age + ' 岁';
+  $('#c-no').textContent     = c.certNo;
+  $('#c-type').textContent   = (c.workType || '') + (c.workPosition ? ' · ' + c.workPosition : '');
+  $('#c-result').textContent = c.checkResult;
+  $('#c-end').textContent    = c.endTime;
+  $('#c-org').textContent    = c.issueOrg;
+
+  // 头像渲染（首页 hero / 我的页 hero / 证照卡照片）
+  const fillAvatar = (el, text) => {
+    if (!el) return;
+    if (c.avatar){
+      el.innerHTML = '<img src="' + c.avatar + '" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;">';
+    } else {
+      el.textContent = text;
+    }
+  };
+  fillAvatar($('#heroAvatar'), c.name.charAt(0));
+  fillAvatar($('#meAvatar'), c.name.charAt(0));
+  const certPhoto = $('#certPhoto');
+  if (certPhoto){
+    if (c.avatar){
+      certPhoto.innerHTML = '<img src="' + c.avatar + '" style="width:100%;height:100%;object-fit:cover;display:block;">';
+    } else {
+      certPhoto.innerHTML = '<svg viewBox="0 0 24 24" width="34" height="34" fill="#c3cbdb"><path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5z"/></svg>';
+    }
+  }
+
+  $('#meName').textContent     = c.name;
+  $('#me-idcard').textContent  = c.idCard;
+  $('#me-type').textContent    = c.workType || '';
+  $('#me-no').textContent      = c.certNo;
+  $('#me-org').textContent     = c.issueOrg;
+
+  const phone = c.phone || store.get('ykz_phone', '13800138000');
+  $('#mePhone').textContent = phone.slice(0, 3) + '****' + phone.slice(-4);
+
+  // 打印页
+  $('#ps-no').textContent     = c.certNo;
+  $('#ps-issue').textContent  = c.startTime;
+  $('#ps-name').textContent   = c.name;
+  $('#ps-gender').textContent = c.gender;
+  $('#ps-age').textContent    = c.age + ' 岁';
+  $('#ps-idcard').textContent = c.idCard;
+  $('#ps-type').textContent   = (c.workType || '') + (c.workPosition ? ' · ' + c.workPosition : '');
+  $('#ps-check').textContent  = c.checkDate;
+  $('#ps-result').textContent = c.checkResult;
+  $('#ps-start').textContent  = c.startTime;
+  $('#ps-end').textContent    = c.endTime;
+  $('#ps-org').textContent    = c.issueOrg;
+  $('#ps-printtime').textContent = '打印时间：' + fmtDateTime(new Date());
+
+  updateNotice();
+}
+
+function updateNotice(){
+  const c = getCert();
+  const n = $('#notice');
+  const end = new Date(c.endTime + 'T23:59:59');
+  const days = Math.ceil((end - new Date()) / 86400000);
+  if (days <= 0){
+    n.className = 'notice danger';
+    n.innerHTML = '⚠️ 您的健康证已过期，请尽快重新办理。';
+  } else if (days <= 30){
+    n.className = 'notice warn';
+    n.innerHTML = '⏰ 您的健康证将于 <b>' + days + '</b> 天后到期，请及时续期。';
+  } else {
+    n.className = 'notice ok';
+    n.innerHTML = '✅ 证照状态正常，有效期剩余 <b>' + days + '</b> 天。';
+  }
+}
+
+function initSealAndQr(){
+  // 印章
+  const url = buildSeal();
+  const homeSeal = $('#homeSeal');
+  const psSeal   = $('#psSeal');
+  if (homeSeal) homeSeal.src = url;
+  if (psSeal)   psSeal.src   = url;
+  // 二维码
+  buildQr();
+}
+
+/* =========================================================
+   四、页面路由
+   ========================================================= */
+let currentView = 'v-login';
+
+/* 页面切换：带方向感的左右滑动动画 */
+const VIEW_ORDER = ['v-home', 'v-verify', 'v-me']; // Tab 顺序，用于判断左右
+const VIEW_STACK = ['v-login', 'v-home', 'v-verify', 'v-me', 'v-edit', 'v-print'];
+
+function go(id, opts){
+  opts = opts || {};
+  if (id === currentView) return;
+
+  // 判断动画方向：向前（右进左出） vs 向后（左进右出）
+  let dir = opts.dir;
+  if (!dir){
+    const a = VIEW_STACK.indexOf(currentView);
+    const b = VIEW_ORDER.indexOf(id) >= 0 ? VIEW_ORDER.indexOf(id) + 1 : VIEW_STACK.indexOf(id);
+    const aIdx = a >= 0 ? a : 0;
+    dir = (b >= aIdx) ? 'forward' : 'back';
+  }
+
+  const oldEl = document.getElementById(currentView);
+  const newEl = document.getElementById(id);
+
+  // 老页面先做退场动画
+  if (oldEl && oldEl !== newEl){
+    oldEl.classList.remove('active');
+    oldEl.classList.add(dir === 'forward' ? 'exit-left' : 'exit-right');
+    setTimeout(() => oldEl.classList.remove('exit-left', 'exit-right'), 300);
+  }
+
+  // 强制重排，确保新页面的进入动画能触发
+  void newEl.offsetWidth;
+  newEl.classList.add('active');
+  currentView = id;
+
+  const showTab = ['v-home', 'v-verify', 'v-me'].indexOf(id) >= 0;
+  $('#tabbar').style.display = showTab ? 'flex' : 'none';
+  $$('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === id));
+
+  if (id === 'v-print'){
+    setTimeout(fitPreview, 30);
+  }
+  if (id === 'v-edit'){
+    setTimeout(fillEditForm, 30);
+  }
+  window.scrollTo(0, 0);
+}
+
+/* 隐藏启动闪屏 */
+function hideSplash(){
+  const sp = document.getElementById('splash');
+  if (sp && !sp.classList.contains('hide')){
+    sp.classList.add('hide');
+    setTimeout(() => { if (sp.parentNode) sp.parentNode.removeChild(sp); }, 500);
+  }
+}
+
+$$('.tab').forEach(t => {
+  t.addEventListener('click', () => go(t.dataset.view));
+});
+
+/* =========================================================
+   五、打印
+   ========================================================= */
+function fitPreview(){
+  const wrap  = $('#a4Preview');
+  const sheet = $('#printSheet');
+  if (!wrap || !sheet) return;
+  const w = wrap.clientWidth;
+  if (w <= 0) return;
+  const s = w / 794;
+  sheet.style.transformOrigin = 'top left';
+  sheet.style.transform = 'scale(' + s + ')';
+  wrap.style.height = Math.round(1123 * s) + 'px';
+}
+window.addEventListener('resize', () => {
+  if (currentView === 'v-print') fitPreview();
+});
+window.addEventListener('orientationchange', () => {
+  setTimeout(() => { if (currentView === 'v-print') fitPreview(); }, 260);
+});
+
+function doPrint(){
+  // 保证打印前缩放已就位
+  fitPreview();
+  setTimeout(() => {
+    try{
+      window.print();
+    }catch(e){
+      toast('当前环境不支持直接打印，请使用浏览器菜单打印');
+    }
+  }, 60);
+}
+
+/* =========================================================
+   六、二维码弹窗
+   ========================================================= */
+function openQr(){
+  const m = $('#qrModal');
+  const box = $('#modalQr');
+  box.innerHTML = '';
+  if (qrDataUrl){
+    const img = document.createElement('img');
+    img.src = qrDataUrl;
+    box.appendChild(img);
+  } else {
+    box.innerHTML = '<div style="line-height:210px;color:#b3bccb;font-size:13px;">二维码生成中…</div>';
+    setTimeout(() => { box.innerHTML = ''; if (qrDataUrl){ const i = document.createElement('img'); i.src = qrDataUrl; box.appendChild(i); } }, 400);
+  }
+  $('#modalNo').textContent = getCert().certNo;
+  m.classList.add('show');
+}
+function closeQr(){ $('#qrModal').classList.remove('show'); }
+
+/* =========================================================
+   七、核验
+   ========================================================= */
+function doVerify(){
+  const input = $('#in-verify').value.trim().toUpperCase();
+  const card  = $('#resultCard');
+  if (!input){ toast('请输入证件编号'); return; }
+
+  const c = getCert();
+  const matched = (input === c.certNo.toUpperCase());
+  const end = new Date(c.endTime + 'T23:59:59');
+  const valid = matched && end > new Date();
+
+  card.classList.add('show');
+
+  if (matched && valid){
+    card.innerHTML =
+      '<div class="result-head">' +
+        '<div class="result-badge">✅</div>' +
+        '<div><div class="result-title">核验通过 · 证照有效</div>' +
+        '<div class="result-desc">该健康证明真实有效，处于有效期内</div></div>' +
+      '</div>' +
+      row('持 证 人', c.name + ' · ' + c.gender + ' · ' + c.age + '岁') +
+      row('证件编号', c.certNo) +
+      row('从业类别', c.workType || '') +
+      row('体检结果', c.checkResult) +
+      row('发证机关', c.issueOrg) +
+      row('有效期至', c.endTime);
+  } else if (matched && !valid){
+    card.innerHTML =
+      '<div class="result-head">' +
+        '<div class="result-badge bad">⚠️</div>' +
+        '<div><div class="result-title bad">证照已过期</div>' +
+        '<div class="result-desc">请持证人尽快重新办理健康检查</div></div>' +
+      '</div>' +
+      row('持 证 人', c.name) +
+      row('证件编号', c.certNo) +
+      row('有效期至', c.endTime);
+  } else {
+    card.innerHTML =
+      '<div class="result-head">' +
+        '<div class="result-badge bad">❌</div>' +
+        '<div><div class="result-title bad">未查询到该证照</div>' +
+        '<div class="result-desc">请核对证件编号是否输入正确</div></div>' +
+      '</div>' +
+      row('查询编号', input) +
+      row('核验时间', fmtDateTime(new Date()));
+  }
+}
+
+function row(k, v){
+  return '<div class="list-item"><span>' + k + '</span><b>' + v + '</b></div>';
+}
+
+/* =========================================================
+   八、登录 / 退出
+   ========================================================= */
+let codeTimer = null;
+
+$('#btn-code').addEventListener('click', function(){
+  const phone = $('#in-phone').value.trim();
+  if (!/^1\d{10}$/.test(phone)){ toast('请输入正确的手机号'); return; }
+  const btn = this;
+  let sec = 60;
+  btn.disabled = true;
+  btn.textContent = sec + 's 后重发';
+  toast('验证码已发送，演示码：123456', 2200);
+  codeTimer = setInterval(() => {
+    sec--;
+    if (sec <= 0){
+      clearInterval(codeTimer);
+      btn.disabled = false;
+      btn.textContent = '获取验证码';
+    } else {
+      btn.textContent = sec + 's 后重发';
+    }
+  }, 1000);
+});
+
+$('#btn-login').addEventListener('click', () => {
+  const phone = $('#in-phone').value.trim();
+  const code  = $('#in-code').value.trim();
+  if (!/^1\d{10}$/.test(phone)){ toast('请输入正确的手机号'); return; }
+  if (code !== '123456'){ toast('验证码错误，演示码为 123456'); return; }
+
+  store.set('ykz_phone', phone);
+  store.set('ykz_logged', true);
+  toast('登录成功');
+  renderAll();
+  initSealAndQr();
+  setTimeout(() => go('v-home'), 300);
+});
+
+function logout(){
+  store.del('ykz_logged');
+  go('v-login');
+  toast('已退出登录');
+}
+
+/* =========================================================
+   九、启动
+   ========================================================= */
+(function init(){
+  // 首次启动写入默认证照
+  getCert();
+  renderAll();
+
+  const logged = store.get('ykz_logged', false);
+  if (logged){
+    go('v-home');
+    initSealAndQr();
+  } else {
+    go('v-login');
+    // 提前把素材准备好，登录后秒开
+    initSealAndQr();
+  }
+
+  // 启动闪屏：素材就绪后隐藏（最少 600ms，模拟冷启动）
+  setTimeout(hideSplash, 800);
+
+  // 打印完成后回到正常状态
+  window.addEventListener('afterprint', () => {
+    setTimeout(() => { if (currentView === 'v-print') fitPreview(); }, 50);
+  });
+
+  // 键盘回车
+  $('#in-code').addEventListener('keydown', e => { if (e.key === 'Enter') $('#btn-login').click(); });
+  $('#in-verify').addEventListener('keydown', e => { if (e.key === 'Enter') doVerify(); });
+})();
+</script>
+</body>
+</html>
