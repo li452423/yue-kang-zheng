@@ -949,6 +949,24 @@ input[type=file].hidden-file{
   </div>
 </div>
 
+<!-- 证照图片预览弹窗（长按保存到相册） -->
+<div class="modal" id="imgModal" onclick="closeImgModal()">
+  <div class="modal-card" style="max-width:380px;padding:16px;" onclick="event.stopPropagation()">
+    <div class="modal-title">证照图片已生成</div>
+    <div style="background:#f2f4f8;border-radius:12px;padding:8px;margin-bottom:12px;">
+      <img id="previewImg" style="width:100%;display:block;border-radius:8px;" alt="证照图片">
+    </div>
+    <p style="font-size:12.5px;color:#8a93a5;margin:0 0 12px;line-height:1.7;">
+      📱 <b>手机用户</b>：长按上方图片 → 选择「保存图片」即可存入相册<br>
+      💻 <b>电脑用户</b>：点击下方「下载图片」按钮
+    </p>
+    <div style="display:flex;gap:10px;">
+      <a id="downloadLink" class="btn primary" style="flex:1;text-align:center;text-decoration:none;display:block;" download="粤康证.png">⬇️ 下载图片</a>
+      <button class="btn ghost" style="flex:1;" onclick="closeImgModal()">关 闭</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <!-- 隐藏的文件输入：拍照 / 相册 -->
@@ -958,8 +976,8 @@ input[type=file].hidden-file{
 <!-- 选择来源底部弹窗：用 label[for] 原生关联 file input，最稳定 -->
 <div class="capture-mask" id="captureMask" onclick="closeCapture()"></div>
 <div class="capture-sheet" id="captureSheet">
-  <label for="fileCam" class="capture-item cam" onclick="closeCapture()">📷 拍照上传</label>
-  <label for="fileAlbum" class="capture-item album" onclick="closeCapture()">🖼 从相册选择</label>
+  <label for="fileCam" class="capture-item cam">📷 拍照上传</label>
+  <label for="fileAlbum" class="capture-item album">🖼 从相册选择</label>
   <div class="capture-item cancel" onclick="closeCapture()">取 消</div>
 </div>
 
@@ -1207,10 +1225,12 @@ function handleAvatarFile(file){
 document.getElementById('fileCam').addEventListener('change', e => {
   handleAvatarFile(e.target.files[0]);
   e.target.value = '';
+  closeCapture();
 });
 document.getElementById('fileAlbum').addEventListener('change', e => {
   handleAvatarFile(e.target.files[0]);
   e.target.value = '';
+  closeCapture();
 });
 function verifyUrl(){
   return 'https://wsjkw.gd.gov.cn/hcert/v/' + getCert().certNo;
@@ -1820,20 +1840,35 @@ function saveCertImage(){
     ctx.textAlign = 'center';
     ctx.fillText('本电子证照与纸质证照具有同等法律效力 · 核验地址：wsjkw.gd.gov.cn/hcert', W / 2, H - 20);
 
-    // 导出并下载
+    // 导出图片
     try{
       const dataUrl = cv.toDataURL('image/png');
-      const a = document.createElement('a');
-      a.href = dataUrl;
-      a.download = '粤康证_' + c.name + '_' + c.certNo + '.png';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      toast('图片已保存，请在相册中查看');
+      const fileName = '粤康证_' + c.name + '_' + c.certNo + '.png';
+
+      // 在弹窗中展示图片，用户可长按保存到相册
+      $('#previewImg').src = dataUrl;
+      const dl = $('#downloadLink');
+      dl.href = dataUrl;
+      dl.download = fileName;
+      $('#imgModal').classList.add('show');
+
+      // 尝试自动下载（电脑浏览器有效）
+      try{
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }catch(e){ /* 移动端不支持自动下载，靠长按保存 */ }
     }catch(e){
-      toast('保存失败，请截图保存');
+      toast('图片生成失败，请截图保存');
     }
   }
+}
+
+function closeImgModal(){
+  $('#imgModal').classList.remove('show');
 }
 
 /* 圆角矩形辅助 */
