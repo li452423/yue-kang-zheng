@@ -604,8 +604,9 @@ input[type=file].hidden-file{
         </div>
 
         <div class="actions">
-          <button class="btn primary" onclick="go('v-print')">🖨 打印健康证</button>
-          <button class="btn ghost" onclick="openQr()">▣ 出示二维码</button>
+          <button class="btn primary" onclick="go('v-print')">🖨 打印</button>
+          <button class="btn ghost" onclick="openQr()">▣ 二维码</button>
+          <button class="btn ghost" onclick="saveCertImage()">💾 保存</button>
         </div>
 
         <div class="tips-card">
@@ -1231,13 +1232,14 @@ function drawStarPath(ctx, cx, cy, spikes, outerR, innerR){
   ctx.closePath();
 }
 
+/* 弧形文字：沿圆周排列 */
 function drawArcText(ctx, text, cx, cy, radius, centerAngle, dir, fontSize, color){
   const chars = Array.from(text);
   const n = chars.length;
-  const spread = Math.min(Math.PI * 1.25, (n * fontSize * 1.08) / radius);
+  const spread = Math.min(Math.PI * 1.3, (n * fontSize * 1.05) / radius);
   ctx.save();
   ctx.fillStyle = color;
-  ctx.font = 'bold ' + fontSize + 'px "Songti SC","SimSun","STSong",serif';
+  ctx.font = 'bold ' + fontSize + 'px "Songti SC","SimSun","STSong","SimSun-ExtB",serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   for (let i = 0; i < n; i++){
@@ -1248,7 +1250,7 @@ function drawArcText(ctx, text, cx, cy, radius, centerAngle, dir, fontSize, colo
       rot = a + Math.PI / 2;
     } else {
       a = centerAngle - t * spread;
-      rot = -(a - centerAngle);
+      rot = -(a - centerAngle) + Math.PI;
     }
     ctx.save();
     ctx.translate(cx + radius * Math.cos(a), cy + radius * Math.sin(a));
@@ -1259,44 +1261,104 @@ function drawArcText(ctx, text, cx, cy, radius, centerAngle, dir, fontSize, colo
   ctx.restore();
 }
 
-function drawSeal(ctx, size, orgName, bottomText){
-  const RED = '#cf0a1e';
+/* 横排文字 */
+function drawCenterText(ctx, text, cx, cy, fontSize, color){
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.font = 'bold ' + fontSize + 'px "Songti SC","SimSun","STSong",serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, cx, cy);
+  ctx.restore();
+}
+
+/* 印章纹理：模拟印泥不均匀效果 */
+function drawSealTexture(ctx, size, cx, cy, R, color){
+  ctx.save();
+  ctx.globalCompositeOperation = 'destination-out';
+  // 随机小圆点模拟印泥缺失
+  for (let i = 0; i < size * 0.6; i++){
+    const angle = Math.random() * Math.PI * 2;
+    const dist = Math.random() * R * 0.98;
+    const px = cx + Math.cos(angle) * dist;
+    const py = cy + Math.sin(angle) * dist;
+    const r = Math.random() * size * 0.004 + 0.3;
+    ctx.globalAlpha = Math.random() * 0.35 + 0.1;
+    ctx.beginPath();
+    ctx.arc(px, py, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // 边缘磨损
+  for (let i = 0; i < size * 0.15; i++){
+    const angle = Math.random() * Math.PI * 2;
+    const dist = R * (0.95 + Math.random() * 0.05);
+    const px = cx + Math.cos(angle) * dist;
+    const py = cy + Math.sin(angle) * dist;
+    ctx.globalAlpha = Math.random() * 0.5 + 0.2;
+    ctx.beginPath();
+    ctx.arc(px, py, Math.random() * size * 0.012 + 0.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+/* 绘制标准公章（依据 GB/T 38546-2020）*/
+function drawSeal(ctx, size, orgName, bottomText, sealNo){
+  const RED = '#d90000';       // 标准公章红
+  const RED_DEEP = '#c00000';  // 深红
   ctx.clearRect(0, 0, size, size);
   const cx = size / 2, cy = size / 2;
-  const R  = size / 2 - size * 0.035;
+  const R  = size / 2 - size * 0.03;
 
-  // 外圈
+  // 1. 外圈粗线（标准公章外圈线宽约 2mm）
   ctx.strokeStyle = RED;
-  ctx.lineWidth = size * 0.016;
+  ctx.lineWidth = size * 0.022;
   ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
 
-  // 内圈细线
+  // 2. 内圈细线（双线结构）
   ctx.lineWidth = size * 0.006;
-  ctx.beginPath(); ctx.arc(cx, cy, R * 0.80, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx, cy, R * 0.92, 0, Math.PI * 2); ctx.stroke();
 
-  // 五角星
+  // 3. 中央五角星（公章核心元素）
   ctx.fillStyle = RED;
-  const starR = size * 0.098;
+  const starR = size * 0.11;
   drawStarPath(ctx, cx, cy, 5, starR, starR * 0.42);
   ctx.fill();
+  // 五角星描边增强
+  ctx.strokeStyle = RED_DEEP;
+  ctx.lineWidth = size * 0.003;
+  drawStarPath(ctx, cx, cy, 5, starR, starR * 0.42);
+  ctx.stroke();
 
-  // 上方弧形文字：发证机构
-  const fs = size * 0.088;
-  drawArcText(ctx, orgName, cx, cy, R * 0.90, -Math.PI / 2, 'top', fs, RED);
+  // 4. 上方弧形文字：单位名称
+  const fsTop = size * 0.082;
+  drawArcText(ctx, orgName, cx, cy, R * 0.76, -Math.PI / 2, 'top', fsTop, RED);
 
-  // 下方弧形文字：专用章
-  drawArcText(ctx, bottomText, cx, cy, R * 0.90, Math.PI / 2, 'bottom', fs * 0.95, RED);
+  // 5. 下方弧形文字：专用章名称
+  const fsBot = size * 0.075;
+  drawArcText(ctx, bottomText, cx, cy, R * 0.76, Math.PI / 2, 'bottom', fsBot, RED);
+
+  // 6. 五角星下方横排编号（印章编号/防伪码）
+  if (sealNo){
+    drawCenterText(ctx, sealNo, cx, cy + R * 0.46, size * 0.038, RED);
+  }
+
+  // 7. 印泥纹理（模拟真实盖章效果）
+  drawSealTexture(ctx, size, cx, cy, R, RED);
 }
 
 let sealDataUrl = '';
 
 function buildSeal(){
-  const S = 520;
+  const S = 600;
   const cv = document.createElement('canvas');
   cv.width = S; cv.height = S;
   const ctx = cv.getContext('2d');
   const c = getCert();
-  drawSeal(ctx, S, c.issueOrg, '健康证明专用章');
+  // 印章编号：取机构代码后6位 + 随机
+  const orgCode = c.issueOrgCode || '12440106MB2C0001';
+  const sealNo = '№ ' + orgCode.slice(-6);
+  drawSeal(ctx, S, c.issueOrg, '健康证明专用章', sealNo);
   sealDataUrl = cv.toDataURL('image/png');
   return sealDataUrl;
 }
@@ -1574,6 +1636,232 @@ function openQr(){
   m.classList.add('show');
 }
 function closeQr(){ $('#qrModal').classList.remove('show'); }
+
+/* =========================================================
+   六（附）、保存证照到手机相册
+   ========================================================= */
+function saveCertImage(){
+  toast('正在生成图片…');
+  const c = getCert();
+  const W = 800, H = 1080;
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+
+  // 背景
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#f2f4f8');
+  bg.addColorStop(1, '#e6ebf4');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // 卡片背景
+  const cardX = 30, cardY = 30, cardW = W - 60, cardH = H - 60;
+  roundRect(ctx, cardX, cardY, cardW, cardH, 28);
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
+  ctx.strokeStyle = '#eaeffa';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // 顶部渐变条
+  const headGrad = ctx.createLinearGradient(cardX, cardY, cardX + cardW, cardY);
+  headGrad.addColorStop(0, '#2b7bff');
+  headGrad.addColorStop(1, '#1257d6');
+  roundRect(ctx, cardX, cardY, cardW, 130, 28);
+  ctx.save();
+  ctx.beginPath();
+  roundRect(ctx, cardX, cardY, cardW, 130, 28);
+  ctx.clip();
+  ctx.fillStyle = headGrad;
+  ctx.fillRect(cardX, cardY, cardW, 130);
+  ctx.restore();
+
+  // 顶部标题
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 32px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('广东省食品从业人员健康证明', W / 2, cardY + 48);
+  ctx.font = '13px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.globalAlpha = 0.85;
+  ctx.fillText('Guangdong Food Practitioner Health Certificate', W / 2, cardY + 86);
+  ctx.globalAlpha = 1;
+
+  // 左侧国徽圆标
+  ctx.fillStyle = '#cf0a1e';
+  ctx.beginPath();
+  ctx.arc(cardX + 55, cardY + 65, 24, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 22px "Songti SC","SimSun",serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('粤', cardX + 55, cardY + 65);
+
+  // 信息区
+  let y = cardY + 160;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+
+  // 照片框
+  const photoX = cardX + 30, photoY = y, photoW = 130, photoH = 170;
+  ctx.fillStyle = '#f0f3f9';
+  roundRect(ctx, photoX, photoY, photoW, photoH, 8);
+  ctx.fill();
+  ctx.strokeStyle = '#e0e6f1';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // 画头像
+  if (c.photo){
+    const img = new Image();
+    img.onload = () => {
+      // 裁剪填充
+      ctx.save();
+      roundRect(ctx, photoX + 2, photoY + 2, photoW - 4, photoH - 4, 6);
+      ctx.clip();
+      const ratio = Math.max((photoW - 4) / img.width, (photoH - 4) / img.height);
+      const dw = img.width * ratio, dh = img.height * ratio;
+      ctx.drawImage(img, photoX + 2 - (dw - photoW + 4) / 2, photoY + 2 - (dh - photoH + 4) / 2, dw, dh);
+      ctx.restore();
+      finishDraw();
+    };
+    img.onerror = finishDraw;
+    img.src = c.photo;
+  } else {
+    // 占位头像
+    ctx.fillStyle = '#c3cbdb';
+    ctx.font = 'bold 60px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(c.name.charAt(0), photoX + photoW / 2, photoY + photoH / 2);
+    finishDraw();
+  }
+
+  function finishDraw(){
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+
+    // 信息行
+    const labelX = photoX + photoW + 25;
+    const valX = labelX + 90;
+    let rowY = y;
+
+    drawRow(ctx, labelX, valX, rowY, '姓　名', c.name, '#151b26', 20);
+    rowY += 40;
+    drawRow(ctx, labelX, valX, rowY, '性　别', c.gender, '#151b26', 20);
+    rowY += 40;
+    drawRow(ctx, labelX, valX, rowY, '年　龄', c.age + ' 岁', '#151b26', 20);
+    rowY += 40;
+    drawRow(ctx, labelX, valX, rowY, '证件编号', c.certNo, '#151b26', 17);
+
+    // 分隔线
+    y = photoY + photoH + 24;
+    ctx.strokeStyle = '#eef2f8';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.moveTo(cardX + 30, y);
+    ctx.lineTo(cardX + cardW - 30, y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 详细信息
+    y += 18;
+    const labelX2 = cardX + 30;
+    const valX2 = labelX2 + 110;
+    drawRow(ctx, labelX2, valX2, y, '从业类别', c.type, '#151b26', 18);
+    y += 38;
+    drawRow(ctx, labelX2, valX2, y, '体检结果', c.checkResult, '#12b76a', 18);
+    y += 38;
+    drawRow(ctx, labelX2, valX2, y, '有效期至', c.endTime, '#151b26', 18);
+    y += 38;
+    drawRow(ctx, labelX2, valX2, y, '发证机关', c.issueOrg, '#151b26', 17);
+
+    // 底部：二维码 + 印章
+    const footY = H - cardY - 130;
+    // 二维码
+    if (qrDataUrl){
+      const qrImg = new Image();
+      qrImg.onload = () => {
+        ctx.drawImage(qrImg, cardX + 30, footY, 110, 110);
+        ctx.fillStyle = '#8a93a5';
+        ctx.font = '11px "PingFang SC",sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('扫码核验', cardX + 85, footY + 122);
+        drawSealOnCanvas(cardX + cardW - 140, footY - 10, 140);
+      };
+      qrImg.onerror = () => drawSealOnCanvas(cardX + cardW - 140, footY - 10, 140);
+      qrImg.src = qrDataUrl;
+    } else {
+      drawSealOnCanvas(cardX + cardW - 140, footY - 10, 140);
+    }
+
+    function drawSealOnCanvas(x, y, size){
+      if (sealDataUrl){
+        const sealImg = new Image();
+        sealImg.onload = () => {
+          ctx.drawImage(sealImg, x, y, size, size);
+          finalize();
+        };
+        sealImg.onerror = finalize;
+        sealImg.src = sealDataUrl;
+      } else {
+        finalize();
+      }
+    }
+  }
+
+  function finalize(){
+    // 底部水印
+    ctx.fillStyle = 'rgba(138,147,165,0.5)';
+    ctx.font = '11px "PingFang SC",sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('本电子证照与纸质证照具有同等法律效力 · 核验地址：wsjkw.gd.gov.cn/hcert', W / 2, H - 20);
+
+    // 导出并下载
+    try{
+      const dataUrl = cv.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = '粤康证_' + c.name + '_' + c.certNo + '.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      toast('图片已保存，请在相册中查看');
+    }catch(e){
+      toast('保存失败，请截图保存');
+    }
+  }
+}
+
+/* 圆角矩形辅助 */
+function roundRect(ctx, x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+/* 画一行信息 */
+function drawRow(ctx, lx, vx, y, label, value, color, fs){
+  ctx.fillStyle = '#8a93a5';
+  ctx.font = fs + 'px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(label, lx, y);
+  ctx.fillStyle = color;
+  ctx.font = 'bold ' + fs + 'px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.fillText(value, vx, y);
+}
 
 /* =========================================================
    七、核验
