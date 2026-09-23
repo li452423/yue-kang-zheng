@@ -681,9 +681,9 @@ input[type=file].hidden-file{
         </div>
 
         <div class="actions">
-          <button class="btn primary" onclick="go('v-print')">🖨 打印</button>
-          <button class="btn ghost" onclick="openQr()">▣ 二维码</button>
-          <button class="btn ghost" onclick="saveCertImage()">💾 保存</button>
+          <button class="btn primary" onclick="if(requireVip('print'))go('v-print')">🖨 打印</button>
+          <button class="btn ghost" onclick="if(requireVip('qr'))openQr()">▣ 二维码</button>
+          <button class="btn ghost" onclick="if(requireVip('save'))saveCertImage()">💾 保存</button>
         </div>
 
         <div class="tips-card">
@@ -769,7 +769,7 @@ input[type=file].hidden-file{
 
       <div class="bottom-bar">
         <button class="btn ghost" onclick="go('v-home',{dir:'back'})">返 回</button>
-        <button class="btn primary" onclick="doPrint()">立即打印</button>
+        <button class="btn primary" onclick="if(requireVip('print'))doPrint()">立即打印</button>
       </div>
     </section>
 
@@ -843,8 +843,8 @@ input[type=file].hidden-file{
 
         <div class="list-card">
           <div class="list-item link" onclick="go('v-edit')"><span>编辑资料 / 上传头像</span><b>›</b></div>
-          <div class="list-item link" onclick="go('v-print')"><span>打印健康证</span><b>›</b></div>
-          <div class="list-item link" onclick="openQr()"><span>出示核验二维码</span><b>›</b></div>
+          <div class="list-item link" onclick="if(requireVip('print'))go('v-print')"><span>打印健康证</span><b>›</b></div>
+          <div class="list-item link" onclick="if(requireVip('qr'))openQr()"><span>出示核验二维码</span><b>›</b></div>
           <div class="list-item link" onclick="resetCert()"><span>重新生成证照数据</span><b>›</b></div>
         </div>
 
@@ -1195,12 +1195,22 @@ function buildDefaultCert(){
   };
 }
 function getCert(){
+  // 优先使用当前登录用户的证照，兼容旧版全局存储
+  const phone = store.get('ykz_current_phone', null);
+  if (phone){
+    return getUserCert(phone);
+  }
   let c = store.get('ykz_cert', null);
   if (!c) { c = buildDefaultCert(); store.set('ykz_cert', c); }
   return c;
 }
 function resetCert(){
-  store.set('ykz_cert', buildDefaultCert());
+  const phone = store.get('ykz_current_phone', null);
+  if (phone){
+    saveUserCert(phone, buildDefaultCert());
+  } else {
+    store.set('ykz_cert', buildDefaultCert());
+  }
   renderAll();
   initSealAndQr();
   toast('已重新生成证照数据');
@@ -1380,15 +1390,92 @@ function verifyUrl(){
 }
 
 /* =========================================================
+   用户管理系统（多用户注册/登录 · localStorage 用户库）
+   每个用户独立存储证照数据、会员状态
+   ========================================================= */
+function getUsers(){
+  return store.get('ykz_users', {});
+}
+function saveUsers(users){
+  store.set('ykz_users', users);
+}
+function getCurrentUser(){
+  const phone = store.get('ykz_current_phone', null);
+  if (!phone) return null;
+  const users = getUsers();
+  return users[phone] || null;
+}
+function setCurrentUser(phone){
+  store.set('ykz_current_phone', phone);
+  store.set('ykz_logged', true);
+  store.set('ykz_phone', phone);
+}
+function clearCurrentUser(){
+  store.del('ykz_current_phone');
+  store.del('ykz_logged');
+}
+
+/* 每个用户的数据 key 前缀 */
+function userKey(phone, k){
+  return 'ykz_' + k + '_' + phone;
+}
+
+/* 读取当前用户的证照 */
+function getUserCert(phone){
+  phone = phone || store.get('ykz_current_phone', null);
+  if (!phone) return buildDefaultCert();
+  let c = store.get(userKey(phone, 'cert'), null);
+  if (!c){
+    c = buildDefaultCert();
+    c.phone = phone;
+    store.set(userKey(phone, 'cert'), c);
+  }
+  return c;
+}
+function saveUserCert(phone, cert){
+  store.set(userKey(phone, 'cert'), cert);
+}
+
+/* 读取当前用户的会员 */
+function getUserVip(phone){
+  phone = phone || store.get('ykz_current_phone', null);
+  if (!phone) return { plan:null, expire:0, active:false };
+  return store.get(userKey(phone, 'vip'), { plan:null, expire:0, active:false });
+}
+function saveUserVip(phone, vip){
+  store.set(userKey(phone, 'vip'), vip);
+}
+
+/* 判断当前登录用户是否为有效会员 */
+function isCurrentUserVip(){
+  const phone = store.get('ykz_current_phone', null);
+  if (!phone) return false;
+  const v = getUserVip(phone);
+  return v.active && v.expire > Date.now();
+}
+
+/* 会员限制：非会员跳转到会员中心 */
+function requireVip(action){
+  if (isCurrentUserVip()) return true;
+  toast('该功能需开通会员后使用', 2000);
+  setTimeout(() => go('v-vip'), 800);
+  return false;
+}
+
+/* =========================================================
    会员订阅管理（按月付费 · 演示环境不真实扣费）
    ========================================================= */
 const VIP_PLANS = [
-  { id:'monthly', name:'月度会员', months:1, price:9.9, origin:19.8, tag:'9.9/月', desc:'适合短期使用，到期自动失效，可随时续费。', recommend:false },
-  { id:'quarterly', name:'季度会员', months:3, price:24.9, origin:59.7, tag:'8.3/月', desc:'连续 3 个月会员权益，平均每月更优惠。', recommend:false },
-  { id:'yearly', name:'年度会员', months:12, price:88, origin:118.8, tag:'7.3/月', desc:'全年畅享全部权益，平均每月最低，最受欢迎。', recommend:true }
+  { id:'monthly', name:'月度会员', months:1, price:1000, origin:1000, tag:'1000元/月', desc:'按月订阅，每月 1000 元，到期自动失效，可随时续费。', recommend:false },
+  { id:'yearly', name:'年度会员', months:12, price:8000, origin:12000, tag:'667元/月', desc:'全年畅享全部权益，一次性支付 8000 元，平均每月仅 667 元，立省 4000 元。', recommend:true }
 ];
 
 function getVip(){
+  // 优先使用当前登录用户的会员数据，兼容旧版全局存储
+  const phone = store.get('ykz_current_phone', null);
+  if (phone){
+    return getUserVip(phone);
+  }
   return store.get('ykz_vip', { plan:null, expire:0, active:false });
 }
 function isVipActive(){
@@ -1458,7 +1545,13 @@ function doPay(method){
     // 演示环境：模拟支付成功
     const startTs = isVipActive() ? getVip().expire : Date.now();
     const expireTs = startTs + p.months * 30 * 86400000;
-    store.set('ykz_vip', { plan:p.id, expire:expireTs, active:true, payMethod:method, payTime:Date.now() });
+    const vipData = { plan:p.id, expire:expireTs, active:true, payMethod:method, payTime:Date.now() };
+    const phone = store.get('ykz_current_phone', null);
+    if (phone){
+      saveUserVip(phone, vipData);
+    } else {
+      store.set('ykz_vip', vipData);
+    }
     toast('✅ 支付成功，已开通 ' + p.name, 2000);
     renderVipStatus();
     renderVipPlans();
@@ -2224,16 +2317,34 @@ $('#btn-login').addEventListener('click', () => {
   if (!/^1\d{10}$/.test(phone)){ toast('请输入正确的手机号'); return; }
   if (code !== '123456'){ toast('验证码错误，演示码为 123456'); return; }
 
-  store.set('ykz_phone', phone);
-  store.set('ykz_logged', true);
-  toast('登录成功');
+  // 多用户注册/登录：手机号作为用户唯一标识
+  const users = getUsers();
+  const isNew = !users[phone];
+  users[phone] = users[phone] || { phone:phone, registeredAt:Date.now() };
+  saveUsers(users);
+
+  // 设置当前登录用户
+  setCurrentUser(phone);
+  toast(isNew ? '注册并登录成功' : '登录成功');
   renderAll();
   initSealAndQr();
-  setTimeout(() => go('v-home'), 300);
+
+  // 非会员用户登录后引导到会员中心
+  if (!isCurrentUserVip()){
+    setTimeout(() => {
+      go('v-home');
+      setTimeout(() => {
+        toast('请开通会员后使用完整功能', 2500);
+        setTimeout(() => go('v-vip'), 1000);
+      }, 500);
+    }, 300);
+  } else {
+    setTimeout(() => go('v-home'), 300);
+  }
 });
 
 function logout(){
-  store.del('ykz_logged');
+  clearCurrentUser();
   go('v-login');
   toast('已退出登录');
 }
@@ -2246,10 +2357,16 @@ function logout(){
   getCert();
   renderAll();
 
-  const logged = store.get('ykz_logged', false);
+  const logged = store.get('ykz_logged', false) && store.get('ykz_current_phone', null);
   if (logged){
     go('v-home');
     initSealAndQr();
+    // 非会员登录后提示开通
+    if (!isCurrentUserVip()){
+      setTimeout(() => {
+        toast('您当前为免费用户，请开通会员使用完整功能', 2800);
+      }, 1200);
+    }
   } else {
     go('v-login');
     // 提前把素材准备好，登录后秒开
