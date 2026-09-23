@@ -847,6 +847,7 @@ input[type=file].hidden-file{
         </div>
 
         <div class="list-card">
+          <div class="list-item link" onclick="go('v-subusers')"><span>👨‍👩‍👧‍👦 管理子用户</span><b id="subuserCount">0 人 ›</b></div>
           <div class="list-item link" onclick="if(requireVip('edit'))go('v-edit')"><span>填写资料 / 上传头像</span><b>›</b></div>
           <div class="list-item link" onclick="if(requireVip('print'))go('v-print')"><span>打印健康证</span><b>›</b></div>
           <div class="list-item link" onclick="if(requireVip('qr'))openQr()"><span>出示核验二维码</span><b>›</b></div>
@@ -855,6 +856,31 @@ input[type=file].hidden-file{
 
         <button class="btn danger block" onclick="logout()">退出登录</button>
         <div class="ver">粤康证 v1.0.0 · 演示版</div>
+        <div class="safe-bottom"></div>
+      </div>
+    </section>
+
+    <!-- ================= 子用户管理 ================= -->
+    <section class="view" id="v-subusers">
+      <div class="navbar">
+        <button class="nav-back" onclick="go('v-me',{dir:'back'})">‹</button>
+        <div class="nav-title">管理子用户</div>
+        <div class="nav-pad"></div>
+      </div>
+      <div class="scroll" style="padding:0 14px;">
+        <div class="notice ok" style="margin-top:14px;">
+          <b>👨‍👩‍👧‍👦 子用户管理</b><br>
+          可为家人、员工等添加子用户，每个子用户拥有独立的健康证资料，可随时切换管理。
+        </div>
+
+        <div class="actions" style="margin:14px 0;">
+          <button class="btn primary block" onclick="showAddSubuser()">➕ 添加子用户</button>
+        </div>
+
+        <div class="list-card" id="subuserList" style="margin-top:0;">
+          <div style="padding:30px 16px;text-align:center;color:var(--muted);font-size:13px;">暂无子用户，点击上方按钮添加</div>
+        </div>
+
         <div class="safe-bottom"></div>
       </div>
     </section>
@@ -1160,6 +1186,45 @@ input[type=file].hidden-file{
   </div>
 </div>
 
+<!-- 添加子用户弹窗 -->
+<div class="modal" id="subuserModal" onclick="closeSubuserModal()">
+  <div class="modal-card" style="max-width:360px;text-align:left;" onclick="event.stopPropagation()">
+    <div class="modal-title">添加子用户</div>
+    <div class="form-row" style="margin-bottom:10px;">
+      <div class="form-label">姓　名</div>
+      <div class="form-control"><input class="form-input" id="su-name" placeholder="请输入姓名"></div>
+    </div>
+    <div class="form-row" style="margin-bottom:10px;">
+      <div class="form-label">性　别</div>
+      <div class="form-control">
+        <select class="form-select" id="su-gender">
+          <option value="男">男</option>
+          <option value="女">女</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row" style="margin-bottom:10px;">
+      <div class="form-label">手机号</div>
+      <div class="form-control"><input class="form-input mono" id="su-phone" type="tel" maxlength="11" placeholder="11位手机号（选填）"></div>
+    </div>
+    <div class="form-row" style="margin-bottom:14px;">
+      <div class="form-label">关　系</div>
+      <div class="form-control">
+        <select class="form-select" id="su-relation">
+          <option value="本人">本人</option>
+          <option value="家人">家人</option>
+          <option value="员工">员工</option>
+          <option value="其他">其他</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn ghost" style="flex:1;" onclick="closeSubuserModal()">取 消</button>
+      <button class="btn primary" style="flex:1;" onclick="addSubuser()">确认添加</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <!-- 隐藏的文件输入：拍照 / 相册 -->
@@ -1245,7 +1310,12 @@ function buildDefaultCert(){
   };
 }
 function getCert(){
-  // 优先使用当前登录用户的证照，兼容旧版全局存储
+  // 优先使用当前子用户的证照
+  const sub = getCurrentSubuser();
+  if (sub && sub.cert){
+    return sub.cert;
+  }
+  // 其次使用当前登录用户的证照
   const phone = store.get('ykz_current_phone', null);
   if (phone){
     return getUserCert(phone);
@@ -1254,12 +1324,39 @@ function getCert(){
   if (!c) { c = buildDefaultCert(); store.set('ykz_cert', c); }
   return c;
 }
-function resetCert(){
+function saveCert(c){
+  const sub = getCurrentSubuser();
+  if (sub){
+    sub.cert = c;
+    const list = getSubusers();
+    const idx = list.findIndex(s => s.id === sub.id);
+    if (idx >= 0){ list[idx] = sub; saveSubusers(list); }
+    return;
+  }
   const phone = store.get('ykz_current_phone', null);
   if (phone){
-    saveUserCert(phone, buildDefaultCert());
+    saveUserCert(phone, c);
+    return;
+  }
+  store.set('ykz_cert', c);
+}
+function resetCert(){
+  const sub = getCurrentSubuser();
+  if (sub){
+    const c = buildDefaultCert();
+    c.name = sub.name;
+    c.gender = sub.gender;
+    sub.cert = c;
+    const list = getSubusers();
+    const idx = list.findIndex(s => s.id === sub.id);
+    if (idx >= 0){ list[idx] = sub; saveSubusers(list); }
   } else {
-    store.set('ykz_cert', buildDefaultCert());
+    const phone = store.get('ykz_current_phone', null);
+    if (phone){
+      saveUserCert(phone, buildDefaultCert());
+    } else {
+      store.set('ykz_cert', buildDefaultCert());
+    }
   }
   renderAll();
   initSealAndQr();
@@ -1351,7 +1448,7 @@ function saveEditForm(){
     avatar: c.avatar
   };
 
-  store.set('ykz_cert', updated);
+  saveCert(updated);
   if (newPhone) store.set('ykz_phone', newPhone);
 
   renderAll();
@@ -1413,7 +1510,7 @@ function handleAvatarFile(file){
       // 写入证照数据（未保存前先暂存在 cert，方便预览）
       const c = getCert();
       c.avatar = compressed;
-      store.set('ykz_cert', c);
+      saveCert(c);
 
       // 更新编辑页头像预览
       const picker = $('#avatarPicker');
@@ -1437,6 +1534,137 @@ document.getElementById('fileAlbum').addEventListener('change', e => {
 });
 function verifyUrl(){
   return 'https://wsjkw.gd.gov.cn/hcert/v/' + getCert().certNo;
+}
+
+/* =========================================================
+   子用户管理系统（主账号下可管理无限个子用户）
+   每个子用户拥有独立的健康证资料
+   ========================================================= */
+function getSubusers(){
+  const phone = store.get('ykz_current_phone', null);
+  if (!phone) return [];
+  return store.get('ykz_subusers_' + phone, []);
+}
+function saveSubusers(list){
+  const phone = store.get('ykz_current_phone', null);
+  if (!phone) return;
+  store.set('ykz_subusers_' + phone, list);
+}
+function getCurrentSubuserId(){
+  const phone = store.get('ykz_current_phone', null);
+  if (!phone) return null;
+  return store.get('ykz_current_subuser_' + phone, null);
+}
+function setCurrentSubuserId(id){
+  const phone = store.get('ykz_current_phone', null);
+  if (!phone) return;
+  store.set('ykz_current_subuser_' + phone, id);
+}
+function getCurrentSubuser(){
+  const id = getCurrentSubuserId();
+  if (!id) return null;
+  const list = getSubusers();
+  return list.find(s => s.id === id) || null;
+}
+
+function showAddSubuser(){
+  $('#su-name').value = '';
+  $('#su-phone').value = '';
+  $('#su-gender').value = '男';
+  $('#su-relation').value = '家人';
+  $('#subuserModal').classList.add('show');
+}
+function closeSubuserModal(){
+  $('#subuserModal').classList.remove('show');
+}
+
+function addSubuser(){
+  const name = $('#su-name').value.trim();
+  const phone = $('#su-phone').value.trim();
+  const gender = $('#su-gender').value;
+  const relation = $('#su-relation').value;
+  if (!name){ toast('请输入姓名'); return; }
+
+  const list = getSubusers();
+  const sub = {
+    id: 'sub_' + Date.now(),
+    name: name,
+    gender: gender,
+    phone: phone,
+    relation: relation,
+    cert: buildDefaultCert(),
+    createdAt: Date.now()
+  };
+  sub.cert.name = name;
+  sub.cert.gender = gender;
+  list.push(sub);
+  saveSubusers(list);
+  // 自动切换到新子用户
+  setCurrentSubuserId(sub.id);
+  closeSubuserModal();
+  renderSubuserList();
+  renderAll();
+  initSealAndQr();
+  toast('子用户添加成功，已切换为当前管理');
+  go('v-home');
+}
+
+function switchSubuser(id){
+  setCurrentSubuserId(id);
+  renderSubuserList();
+  renderAll();
+  initSealAndQr();
+  const sub = getCurrentSubuser();
+  toast('已切换到：' + (sub ? sub.name : ''));
+  go('v-home');
+}
+
+function deleteSubuser(id){
+  if (!confirm('确定删除该子用户吗？其证照数据将一并删除。')) return;
+  let list = getSubusers();
+  list = list.filter(s => s.id !== id);
+  saveSubusers(list);
+  // 如果删除的是当前子用户，清空当前选择
+  if (getCurrentSubuserId() === id){
+    setCurrentSubuserId(null);
+  }
+  renderSubuserList();
+  renderAll();
+  initSealAndQr();
+  toast('子用户已删除');
+}
+
+function renderSubuserList(){
+  const list = getSubusers();
+  const curId = getCurrentSubuserId();
+  const box = $('#subuserList');
+  const countEl = $('#subuserCount');
+  if (countEl) countEl.textContent = list.length + ' 人 ›';
+
+  if (list.length === 0){
+    box.innerHTML = '<div style="padding:30px 16px;text-align:center;color:var(--muted);font-size:13px;">暂无子用户，点击上方按钮添加</div>';
+    return;
+  }
+  let html = '';
+  list.forEach(s => {
+    const isCur = (s.id === curId);
+    html += '<div class="list-item" style="flex-direction:column;align-items:stretch;gap:8px;">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">' +
+        '<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">' +
+          '<div style="width:36px;height:36px;border-radius:50%;background:' + (isCur ? 'var(--blue)' : '#e9edf4') + ';color:' + (isCur ? '#fff' : 'var(--muted)') + ';display:flex;align-items:center;justify-content:center;font-weight:700;flex:0 0 auto;">' + s.name.charAt(0) + '</div>' +
+          '<div style="flex:1;min-width:0;">' +
+            '<div style="font-size:14px;font-weight:600;">' + s.name + (isCur ? ' <span style="color:var(--blue);font-size:11px;">· 当前</span>' : '') + '</div>' +
+            '<div style="font-size:11.5px;color:var(--muted);">' + s.relation + (s.phone ? ' · ' + s.phone.slice(0,3) + '****' + s.phone.slice(-4) : '') + '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;">' +
+        (isCur ? '<button class="btn ghost" style="flex:1;padding:8px;font-size:13px;background:#e8f0ff;color:var(--blue);border-color:#cfe0ff;" disabled>✓ 当前管理中</button>' : '<button class="btn primary" style="flex:1;padding:8px;font-size:13px;" onclick="switchSubuser(\'' + s.id + '\')">切换管理</button>') +
+        '<button class="btn danger" style="flex:0 0 auto;padding:8px 14px;font-size:13px;" onclick="deleteSubuser(\'' + s.id + '\')">删除</button>' +
+      '</div>' +
+    '</div>';
+  });
+  box.innerHTML = html;
 }
 
 /* =========================================================
@@ -1904,6 +2132,10 @@ function fallbackQrImage(tmp, text){
 function renderAll(){
   const c = getCert();
 
+  // 子用户数量
+  const countEl = $('#subuserCount');
+  if (countEl) countEl.textContent = getSubusers().length + ' 人 ›';
+
   // 首页
   $('#c-name').textContent   = c.name;
   $('#c-gender').textContent = c.gender;
@@ -1998,7 +2230,7 @@ let currentView = 'v-login';
 
 /* 页面切换：带方向感的左右滑动动画 */
 const VIEW_ORDER = ['v-home', 'v-verify', 'v-me']; // Tab 顺序，用于判断左右
-const VIEW_STACK = ['v-login', 'v-home', 'v-verify', 'v-me', 'v-edit', 'v-vip', 'v-admin', 'v-print'];
+const VIEW_STACK = ['v-login', 'v-home', 'v-verify', 'v-me', 'v-subusers', 'v-edit', 'v-vip', 'v-admin', 'v-print'];
 
 function go(id, opts){
   opts = opts || {};
@@ -2034,6 +2266,9 @@ function go(id, opts){
 
   if (id === 'v-print'){
     setTimeout(fitPreview, 30);
+  }
+  if (id === 'v-subusers'){
+    renderSubuserList();
   }
   if (id === 'v-edit'){
     setTimeout(fillEditForm, 30);
