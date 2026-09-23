@@ -336,6 +336,83 @@ body{
 #v-me .btn.danger{margin-top:18px;height:48px;}
 .ver{text-align:center;font-size:11.5px;color:#b3bccb;margin-top:20px;letter-spacing:.5px;}
 
+/* ---------- 会员中心 ---------- */
+.vip-card{
+  margin-top:14px;border-radius:16px;padding:16px 18px;cursor:pointer;
+  background:linear-gradient(135deg,#3a2a1a,#1f1610);color:#ffd89b;
+  border:1px solid #5a4520;box-shadow:0 8px 24px rgba(60,40,10,.18);
+  transition:transform .15s;
+}
+.vip-card:active{transform:scale(.98);}
+.vip-card.active{background:linear-gradient(135deg,#5a3d10,#2e1f08);border-color:#c79a3a;}
+.vip-row{display:flex;align-items:center;gap:12px;}
+.vip-icon{width:42px;height:42px;border-radius:12px;flex:0 0 auto;
+  background:linear-gradient(135deg,#ffd700,#c79a00);color:#3a2a1a;
+  display:flex;align-items:center;justify-content:center;font-size:22px;
+  box-shadow:0 4px 12px rgba(255,215,0,.3);}
+.vip-info{flex:1;min-width:0;}
+.vip-title{font-size:15px;font-weight:700;color:#ffd89b;letter-spacing:.5px;}
+.vip-card.active .vip-title{color:#ffe08a;}
+.vip-sub{font-size:12px;color:#b89a6a;margin-top:3px;}
+.vip-arrow{font-size:22px;color:#8a7440;font-weight:300;}
+
+.vip-scroll{padding:14px 14px 0;}
+.vip-hero{
+  text-align:center;padding:30px 20px 26px;border-radius:18px;margin-bottom:18px;
+  background:linear-gradient(135deg,#1a1410,#3a2810 60%,#5a3d10);
+  color:#ffd89b;box-shadow:0 10px 30px rgba(60,40,10,.25);
+}
+.vip-hero-icon{font-size:46px;line-height:1;margin-bottom:10px;}
+.vip-hero-title{font-size:22px;font-weight:700;letter-spacing:2px;color:#ffe08a;}
+.vip-hero-sub{font-size:12.5px;color:#b89a6a;margin-top:8px;letter-spacing:.5px;}
+.vip-hero-status{margin-top:14px;display:inline-block;padding:5px 16px;
+  border-radius:20px;background:rgba(255,216,155,.12);border:1px solid rgba(255,216,155,.25);
+  font-size:12.5px;color:#ffd89b;}
+.vip-hero-status.active{background:rgba(255,216,155,.18);color:#ffe08a;}
+
+.vip-plans{display:flex;flex-direction:column;gap:12px;}
+.vip-plan{
+  background:#fff;border-radius:16px;padding:18px 16px;
+  border:2px solid #eef2f8;transition:all .15s;cursor:pointer;
+  box-shadow:0 4px 14px rgba(20,45,95,.05);
+}
+.vip-plan:active{transform:scale(.98);}
+.vip-plan.selected{border-color:#c79a00;background:linear-gradient(135deg,#fffdf5,#fff8e6);}
+.vip-plan.recommend{position:relative;}
+.vip-plan.recommend::after{
+  content:'推荐';position:absolute;top:-10px;right:14px;
+  background:linear-gradient(135deg,#ff6b6b,#cf0a1e);color:#fff;
+  font-size:11px;padding:3px 12px;border-radius:10px;font-weight:600;
+}
+.vip-plan-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;}
+.vip-plan-name{font-size:16px;font-weight:700;color:#151b26;}
+.vip-plan-tag{font-size:11px;color:#c79a00;background:#fff4d6;
+  padding:2px 8px;border-radius:8px;margin-left:8px;}
+.vip-plan-price{font-size:24px;font-weight:700;color:#cf0a1e;}
+.vip-plan-price small{font-size:13px;color:#8a93a5;font-weight:400;}
+.vip-plan-price .del{font-size:13px;color:#b3bccb;text-decoration:line-through;margin-right:6px;font-weight:400;}
+.vip-plan-desc{font-size:12.5px;color:#6b7688;margin-top:8px;line-height:1.6;}
+.vip-plan-btn{
+  margin-top:12px;height:42px;border-radius:10px;border:0;font-size:14px;font-weight:600;
+  background:linear-gradient(135deg,#ffd700,#c79a00);color:#3a2a1a;cursor:pointer;font-family:inherit;
+}
+.vip-plan.selected .vip-plan-btn{background:linear-gradient(135deg,#cf0a1e,#a30816);color:#fff;}
+
+.vip-note{margin-top:10px;padding:10px 12px;background:#fff6e6;border-radius:10px;
+  font-size:11.5px;color:#a35b00;line-height:1.6;}
+
+.pay-amount{text-align:center;font-size:30px;font-weight:700;color:#cf0a1e;margin:6px 0 4px;}
+.pay-desc{text-align:center;font-size:12.5px;color:#8a93a5;margin-bottom:16px;}
+.pay-methods{display:flex;gap:10px;}
+.pay-method{
+  flex:1;border:1.5px solid #eef2f8;border-radius:12px;padding:14px 6px;text-align:center;
+  cursor:pointer;transition:all .15s;
+}
+.pay-method:active{transform:scale(.96);border-color:#cfe0ff;}
+.pay-ico{width:42px;height:42px;border-radius:50%;margin:0 auto 8px;
+  display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;}
+.pay-name{font-size:13.5px;font-weight:600;color:#151b26;}
+
 /* ---------- 编辑资料 ---------- */
 .form-section{margin-top:14px;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #eaeffa;box-shadow:0 6px 20px rgba(20,45,95,.06);}
 .form-section-title{
@@ -745,6 +822,18 @@ input[type=file].hidden-file{
       </div>
 
       <div class="scroll">
+        <!-- 会员状态卡 -->
+        <div class="vip-card" id="vipCard" onclick="go('v-vip')">
+          <div class="vip-row">
+            <div class="vip-icon">👑</div>
+            <div class="vip-info">
+              <div class="vip-title" id="vipTitle">免费用户</div>
+              <div class="vip-sub" id="vipSub">开通会员 · 解锁更多功能</div>
+            </div>
+            <div class="vip-arrow">›</div>
+          </div>
+        </div>
+
         <div class="list-card">
           <div class="list-item"><span>身份证号</span><b class="mono" id="me-idcard">--</b></div>
           <div class="list-item"><span>从业类别</span><b id="me-type">--</b></div>
@@ -762,6 +851,60 @@ input[type=file].hidden-file{
         <button class="btn danger block" onclick="logout()">退出登录</button>
         <div class="ver">粤康证 v1.0.0 · 演示版</div>
         <div class="safe-bottom"></div>
+      </div>
+    </section>
+
+    <!-- ================= 会员中心 ================= -->
+    <section class="view" id="v-vip">
+      <div class="navbar">
+        <button class="nav-back" onclick="go('v-me',{dir:'back'})">‹</button>
+        <div class="nav-title">会员中心</div>
+        <div class="nav-pad"></div>
+      </div>
+      <div class="scroll vip-scroll">
+        <div class="vip-hero">
+          <div class="vip-hero-icon">👑</div>
+          <div class="vip-hero-title">粤康证会员</div>
+          <div class="vip-hero-sub">畅享高清打印 · 无水印保存 · 优先核验</div>
+          <div class="vip-hero-status" id="vipStatus">当前：免费用户</div>
+        </div>
+
+        <div class="vip-plans" id="vipPlans">
+          <!-- 套餐卡片由 JS 渲染 -->
+        </div>
+
+        <div class="tips-card">
+          <div class="tips-title">会员权益</div>
+          <ul>
+            <li>💾 无水印高清保存证照图片到相册</li>
+            <li>🖨️ 无限制打印 A4 版式健康证明</li>
+            <li>⚡ 优先核验通道，秒级返回结果</li>
+            <li>📤 批量导出证照数据与二维码</li>
+            <li>🔔 到期提醒与续期办理通知</li>
+          </ul>
+          <div class="vip-note">⚠️ 演示环境，支付不会真实扣费。点击支付后选择支付方式即可模拟开通。</div>
+        </div>
+        <div class="safe-bottom"></div>
+      </div>
+
+      <!-- 支付方式弹窗 -->
+      <div class="modal" id="payModal" onclick="closePay()">
+        <div class="modal-card" style="max-width:340px;" onclick="event.stopPropagation()">
+          <div class="modal-title">选择支付方式</div>
+          <div class="pay-amount" id="payAmount">¥ 0.00</div>
+          <div class="pay-desc" id="payDesc">--</div>
+          <div class="pay-methods">
+            <div class="pay-method" onclick="doPay('wechat')">
+              <div class="pay-ico" style="background:#07c160;">💚</div>
+              <div class="pay-name">微信支付</div>
+            </div>
+            <div class="pay-method" onclick="doPay('alipay')">
+              <div class="pay-ico" style="background:#1677ff;">💰</div>
+              <div class="pay-name">支付宝</div>
+            </div>
+          </div>
+          <button class="btn ghost block" onclick="closePay()" style="margin-top:14px;">取消</button>
+        </div>
       </div>
     </section>
 
@@ -1237,6 +1380,93 @@ function verifyUrl(){
 }
 
 /* =========================================================
+   会员订阅管理（按月付费 · 演示环境不真实扣费）
+   ========================================================= */
+const VIP_PLANS = [
+  { id:'monthly', name:'月度会员', months:1, price:9.9, origin:19.8, tag:'9.9/月', desc:'适合短期使用，到期自动失效，可随时续费。', recommend:false },
+  { id:'quarterly', name:'季度会员', months:3, price:24.9, origin:59.7, tag:'8.3/月', desc:'连续 3 个月会员权益，平均每月更优惠。', recommend:false },
+  { id:'yearly', name:'年度会员', months:12, price:88, origin:118.8, tag:'7.3/月', desc:'全年畅享全部权益，平均每月最低，最受欢迎。', recommend:true }
+];
+
+function getVip(){
+  return store.get('ykz_vip', { plan:null, expire:0, active:false });
+}
+function isVipActive(){
+  const v = getVip();
+  return v.active && v.expire > Date.now();
+}
+function fmtExpire(ts){
+  if (!ts) return '--';
+  const d = new Date(ts);
+  return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+}
+function renderVipPlans(){
+  const box = $('#vipPlans');
+  if (!box) return;
+  const cur = getVip();
+  box.innerHTML = VIP_PLANS.map(p => {
+    const isCur = cur.plan === p.id && cur.active;
+    const monthPrice = (p.price / p.months).toFixed(1);
+    return '<div class="vip-plan ' + (p.recommend ? 'recommend' : '') + ' ' + (isCur ? 'selected' : '') + '">' +
+      '<div class="vip-plan-row">' +
+        '<div><span class="vip-plan-name">' + p.name + '</span>' +
+          '<span class="vip-plan-tag">' + p.tag + '</span></div>' +
+        '<div class="vip-plan-price"><span class="del">¥' + p.origin + '</span>¥' + p.price +
+          '<small> / ' + monthPrice + ' 元/月</small></div>' +
+      '</div>' +
+      '<div class="vip-plan-desc">' + p.desc + '</div>' +
+      '<button class="vip-plan-btn" onclick="openPay(\'' + p.id + '\')">' +
+        (isCur ? '当前套餐 · 续费' : '立即开通') + '</button>' +
+    '</div>';
+  }).join('');
+}
+function renderVipStatus(){
+  const active = isVipActive();
+  const v = getVip();
+  const card = $('#vipCard');
+  const title = $('#vipTitle');
+  const sub = $('#vipSub');
+  const hero = $('#vipStatus');
+  if (card) card.classList.toggle('active', active);
+  if (active){
+    const plan = VIP_PLANS.find(p => p.id === v.plan) || {name:'会员'};
+    if (title) title.textContent = plan.name + ' · 生效中';
+    if (sub) sub.textContent = '到期时间：' + fmtExpire(v.expire);
+    if (hero){ hero.textContent = '当前：' + plan.name + ' · 到期 ' + fmtExpire(v.expire); hero.classList.add('active'); }
+  } else {
+    if (title) title.textContent = '免费用户';
+    if (sub) sub.textContent = '开通会员 · 解锁更多功能';
+    if (hero){ hero.textContent = '当前：免费用户'; hero.classList.remove('active'); }
+  }
+}
+let pendingPlan = null;
+function openPay(planId){
+  const p = VIP_PLANS.find(x => x.id === planId);
+  if (!p){ toast('套餐不存在'); return; }
+  pendingPlan = p;
+  $('#payAmount').textContent = '¥ ' + p.price.toFixed(2);
+  $('#payDesc').textContent = p.name + ' · ' + p.months + ' 个月会员权益';
+  $('#payModal').classList.add('show');
+}
+function closePay(){ $('#payModal').classList.remove('show'); pendingPlan = null; }
+function doPay(method){
+  if (!pendingPlan){ toast('请选择套餐'); return; }
+  const p = pendingPlan;
+  closePay();
+  toast('正在拉起' + (method === 'wechat' ? '微信' : '支付宝') + '支付…', 1500);
+  setTimeout(() => {
+    // 演示环境：模拟支付成功
+    const startTs = isVipActive() ? getVip().expire : Date.now();
+    const expireTs = startTs + p.months * 30 * 86400000;
+    store.set('ykz_vip', { plan:p.id, expire:expireTs, active:true, payMethod:method, payTime:Date.now() });
+    toast('✅ 支付成功，已开通 ' + p.name, 2000);
+    renderVipStatus();
+    renderVipPlans();
+    updateNotice();
+  }, 1500);
+}
+
+/* =========================================================
    一、电子印章（纯 Canvas 绘制）
    ========================================================= */
 function drawStarPath(ctx, cx, cy, spikes, outerR, innerR){
@@ -1511,6 +1741,8 @@ function renderAll(){
   $('#ps-printtime').textContent = '打印时间：' + fmtDateTime(new Date());
 
   updateNotice();
+  renderVipStatus();
+  renderVipPlans();
 }
 
 function updateNotice(){
@@ -1548,7 +1780,7 @@ let currentView = 'v-login';
 
 /* 页面切换：带方向感的左右滑动动画 */
 const VIEW_ORDER = ['v-home', 'v-verify', 'v-me']; // Tab 顺序，用于判断左右
-const VIEW_STACK = ['v-login', 'v-home', 'v-verify', 'v-me', 'v-edit', 'v-print'];
+const VIEW_STACK = ['v-login', 'v-home', 'v-verify', 'v-me', 'v-edit', 'v-vip', 'v-print'];
 
 function go(id, opts){
   opts = opts || {};
@@ -1733,8 +1965,9 @@ function saveCertImage(){
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  // 画头像
-  if (c.photo){
+  // 画头像（同步加载 base64，避免导出空白）
+  const avatarSrc = c.avatar || c.photo;
+  if (avatarSrc){
     const img = new Image();
     img.onload = () => {
       // 裁剪填充
@@ -1747,8 +1980,16 @@ function saveCertImage(){
       ctx.restore();
       finishDraw();
     };
-    img.onerror = finishDraw;
-    img.src = c.photo;
+    img.onerror = () => {
+      // 加载失败时画占位头像
+      ctx.fillStyle = '#c3cbdb';
+      ctx.font = 'bold 60px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(c.name.charAt(0), photoX + photoW / 2, photoY + photoH / 2);
+      finishDraw();
+    };
+    img.src = avatarSrc;
   } else {
     // 占位头像
     ctx.fillStyle = '#c3cbdb';
