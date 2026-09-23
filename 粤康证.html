@@ -624,11 +624,10 @@ input[type=file].hidden-file{
         </div>
         <div class="field">
           <span class="field-ico">🔒</span>
-          <input id="in-code" type="tel" maxlength="6" placeholder="请输入验证码">
-          <button class="code-btn" id="btn-code">获取验证码</button>
+          <input id="in-code" type="password" maxlength="20" placeholder="请输入密码">
         </div>
         <button class="btn primary block" id="btn-login">登 录 / 注 册</button>
-        <p class="login-tip">任意手机号 + 验证码 <b>123456</b></p>
+        <p class="login-tip">任意手机号 + 密码 <b>123456</b></p>
         <div style="margin-top:30px;">
           <button class="btn ghost block" onclick="go('v-admin')" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.4);font-size:14px;">🔑 管理员后台</button>
         </div>
@@ -2415,33 +2414,12 @@ function row(k, v){
 /* =========================================================
    八、登录 / 退出
    ========================================================= */
-let codeTimer = null;
-
-$('#btn-code').addEventListener('click', function(){
-  const phone = $('#in-phone').value.trim();
-  if (!/^1\d{10}$/.test(phone)){ toast('请输入正确的手机号'); return; }
-  const btn = this;
-  let sec = 60;
-  btn.disabled = true;
-  btn.textContent = sec + 's 后重发';
-  toast('验证码已发送，演示码：123456', 2200);
-  codeTimer = setInterval(() => {
-    sec--;
-    if (sec <= 0){
-      clearInterval(codeTimer);
-      btn.disabled = false;
-      btn.textContent = '获取验证码';
-    } else {
-      btn.textContent = sec + 's 后重发';
-    }
-  }, 1000);
-});
 
 $('#btn-login').addEventListener('click', () => {
   const phone = $('#in-phone').value.trim();
   const code  = $('#in-code').value.trim();
   if (!/^1\d{10}$/.test(phone)){ toast('请输入正确的手机号'); return; }
-  if (code !== '123456'){ toast('验证码错误，演示码为 123456'); return; }
+  if (code !== '123456'){ toast('密码错误，演示密码为 123456'); return; }
 
   // 多用户注册/登录：手机号作为用户唯一标识
   const users = getUsers();
