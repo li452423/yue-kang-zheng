@@ -624,10 +624,10 @@ input[type=file].hidden-file{
         </div>
         <div class="field">
           <span class="field-ico">🔒</span>
-          <input id="in-code" type="password" maxlength="6" placeholder="请输入6位数字密码">
+          <input id="in-code" type="password" maxlength="6" inputmode="numeric" placeholder="请输入6位数字密码">
         </div>
         <button class="btn primary block" id="btn-login">登 录 / 注 册</button>
-        <p class="login-tip">点「登录 / 注册」即可</p>
+        <p class="login-tip" id="loginTip">新用户请设置6位数字密码，老用户请输入已设置的密码</p>
         <div style="margin-top:30px;">
           <button class="btn ghost block" onclick="go('v-admin')" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.4);font-size:14px;">🔑 管理员后台</button>
         </div>
@@ -2419,17 +2419,27 @@ $('#btn-login').addEventListener('click', () => {
   const phone = $('#in-phone').value.trim();
   const code  = $('#in-code').value.trim();
   if (!/^1\d{10}$/.test(phone)){ toast('请输入正确的手机号'); return; }
-  if (code !== '123456'){ toast('密码错误，演示密码为 123456'); return; }
+  if (!/^\d{6}$/.test(code)){ toast('请输入6位数字密码'); return; }
 
   // 多用户注册/登录：手机号作为用户唯一标识
   const users = getUsers();
   const isNew = !users[phone];
-  users[phone] = users[phone] || { phone:phone, registeredAt:Date.now() };
-  saveUsers(users);
+  if (isNew){
+    // 新用户：保存密码，注册成功
+    users[phone] = { phone:phone, password:code, registeredAt:Date.now() };
+    saveUsers(users);
+  } else {
+    // 老用户：验证密码
+    if (users[phone].password !== code){
+      toast('密码错误，请重新输入');
+      return;
+    }
+  }
 
   // 设置当前登录用户
   setCurrentUser(phone);
   toast(isNew ? '注册并登录成功' : '登录成功');
+  $('#in-code').value = '';
   renderAll();
   initSealAndQr();
 
@@ -2488,6 +2498,28 @@ function logout(){
   // 键盘回车
   $('#in-code').addEventListener('keydown', e => { if (e.key === 'Enter') $('#btn-login').click(); });
   $('#in-verify').addEventListener('keydown', e => { if (e.key === 'Enter') doVerify(); });
+
+  // 手机号输入时动态区分新老用户
+  $('#in-phone').addEventListener('input', () => {
+    const phone = $('#in-phone').value.trim();
+    const tip = $('#loginTip');
+    const codeInput = $('#in-code');
+    if (/^1\d{10}$/.test(phone)){
+      const users = getUsers();
+      if (users[phone]){
+        // 老用户
+        tip.innerHTML = '已注册用户，请输入您设置的密码';
+        codeInput.placeholder = '请输入6位数字密码';
+      } else {
+        // 新用户
+        tip.innerHTML = '新用户，请设置6位数字密码（请牢记）';
+        codeInput.placeholder = '请设置6位数字密码';
+      }
+    } else {
+      tip.innerHTML = '新用户请设置6位数字密码，老用户请输入已设置的密码';
+      codeInput.placeholder = '请输入6位数字密码';
+    }
+  });
 })();
 </script>
 </body>
