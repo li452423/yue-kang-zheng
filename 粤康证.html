@@ -398,6 +398,9 @@ body{
 }
 .vip-plan.selected .vip-plan-btn{background:linear-gradient(135deg,#cf0a1e,#a30816);color:#fff;}
 
+.vip-plan-cur{margin-top:12px;padding:10px 12px;background:#e8f8f0;border-radius:10px;font-size:13px;color:#0b7a4b;font-weight:600;text-align:center;}
+.vip-plan-contact{margin-top:12px;padding:11px 12px;background:linear-gradient(135deg,#fff8e6,#fff4d6);border-radius:10px;font-size:13.5px;color:#a35b00;font-weight:600;text-align:center;border:1px solid #ffe0b0;}
+
 .vip-note{margin-top:10px;padding:10px 12px;background:#fff6e6;border-radius:10px;
   font-size:11.5px;color:#a35b00;line-height:1.6;}
 
@@ -625,7 +628,10 @@ input[type=file].hidden-file{
           <button class="code-btn" id="btn-code">获取验证码</button>
         </div>
         <button class="btn primary block" id="btn-login">登 录 / 注 册</button>
-        <p class="login-tip">演示环境 · 任意手机号 + 验证码 <b>123456</b></p>
+        <p class="login-tip">任意手机号 + 验证码 <b>123456</b></p>
+        <div style="margin-top:30px;">
+          <button class="btn ghost block" onclick="go('v-admin')" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.4);font-size:14px;">🔑 管理员后台</button>
+        </div>
       </div>
     </section>
 
@@ -882,28 +888,74 @@ input[type=file].hidden-file{
             <li>📤 批量导出证照数据与二维码</li>
             <li>🔔 到期提醒与续期办理通知</li>
           </ul>
-          <div class="vip-note">⚠️ 演示环境，支付不会真实扣费。点击支付后选择支付方式即可模拟开通。</div>
+          <div class="vip-note">📞 开通会员请联系管理员，由管理员在后台授权开通。</div>
         </div>
         <div class="safe-bottom"></div>
       </div>
+    </section>
 
-      <!-- 支付方式弹窗 -->
-      <div class="modal" id="payModal" onclick="closePay()">
-        <div class="modal-card" style="max-width:340px;" onclick="event.stopPropagation()">
-          <div class="modal-title">选择支付方式</div>
-          <div class="pay-amount" id="payAmount">¥ 0.00</div>
-          <div class="pay-desc" id="payDesc">--</div>
-          <div class="pay-methods">
-            <div class="pay-method" onclick="doPay('wechat')">
-              <div class="pay-ico" style="background:#07c160;">💚</div>
-              <div class="pay-name">微信支付</div>
+    <!-- ================= 管理员后台 ================= -->
+    <section class="view" id="v-admin">
+      <div class="navbar">
+        <button class="nav-back" onclick="go('v-login',{dir:'back'})">‹</button>
+        <div class="nav-title">管理员后台</div>
+        <div class="nav-pad"></div>
+      </div>
+      <div class="scroll" style="padding:14px 14px 0;">
+        <!-- 管理员登录 -->
+        <div class="list-card" id="adminLoginCard">
+          <div style="padding:20px 16px;">
+            <div style="font-size:16px;font-weight:700;text-align:center;margin-bottom:16px;">管理员登录</div>
+            <div class="field" style="margin-bottom:12px;box-shadow:none;border:1.5px solid #e2e8f2;background:#fafbfe;">
+              <span class="field-ico">🔑</span>
+              <input id="in-admin-pwd" type="password" placeholder="管理员密码" style="font-size:16px;">
             </div>
-            <div class="pay-method" onclick="doPay('alipay')">
-              <div class="pay-ico" style="background:#1677ff;">💰</div>
-              <div class="pay-name">支付宝</div>
+            <button class="btn primary block" onclick="adminLogin()">登 录</button>
+            <div style="font-size:12px;color:#8a93a5;text-align:center;margin-top:12px;">演示密码：<b style="color:#cf0a1e;">admin123</b></div>
+          </div>
+        </div>
+
+        <!-- 管理员面板（登录后显示） -->
+        <div id="adminPanel" style="display:none;">
+          <!-- 统计 -->
+          <div style="display:flex;gap:10px;margin-top:14px;">
+            <div style="flex:1;background:#fff;border-radius:14px;padding:14px;text-align:center;border:1px solid #eaeffa;box-shadow:0 4px 14px rgba(20,45,95,.05);">
+              <div style="font-size:24px;font-weight:700;color:#1A6EFF;" id="adminUserCount">0</div>
+              <div style="font-size:12px;color:#8a93a5;margin-top:4px;">注册用户</div>
+            </div>
+            <div style="flex:1;background:#fff;border-radius:14px;padding:14px;text-align:center;border:1px solid #eaeffa;box-shadow:0 4px 14px rgba(20,45,95,.05);">
+              <div style="font-size:24px;font-weight:700;color:#c79a00;" id="adminVipCount">0</div>
+              <div style="font-size:12px;color:#8a93a5;margin-top:4px;">会员用户</div>
             </div>
           </div>
-          <button class="btn ghost block" onclick="closePay()" style="margin-top:14px;">取消</button>
+
+          <!-- 开通会员 -->
+          <div class="list-card" style="margin-top:14px;">
+            <div style="padding:16px;">
+              <div style="font-size:14px;font-weight:700;color:#1A6EFF;margin-bottom:12px;letter-spacing:.5px;">开通会员授权</div>
+              <div class="field" style="margin-bottom:10px;box-shadow:none;border:1.5px solid #e2e8f2;background:#fafbfe;">
+                <span class="field-ico">📱</span>
+                <input id="in-admin-phone" type="tel" maxlength="11" placeholder="用户手机号" style="font-size:16px;">
+              </div>
+              <select id="in-admin-plan" style="width:100%;height:48px;border:1.5px solid #e2e8f2;border-radius:12px;padding:0 14px;font-size:15px;font-family:inherit;outline:0;background:#fafbfe;margin-bottom:12px;color:#151b26;">
+                <option value="monthly">月度会员（1000元/月）</option>
+                <option value="yearly">年度会员（8000元/年）</option>
+              </select>
+              <div style="display:flex;gap:10px;">
+                <button class="btn primary" style="flex:1;" onclick="adminGrant()">✅ 授权开通</button>
+                <button class="btn danger" style="flex:1;" onclick="adminRevoke()">❌ 撤销会员</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 用户列表 -->
+          <div class="list-card" style="margin-top:14px;">
+            <div style="padding:14px 16px 10px;font-size:14px;font-weight:700;color:#1A6EFF;letter-spacing:.5px;border-bottom:1px solid #f4f7fc;">用户列表</div>
+            <div id="adminUserList"></div>
+          </div>
+
+          <button class="btn danger block" style="margin-top:18px;height:48px;" onclick="adminLogout()">退出管理员</button>
+          <div class="safe-bottom"></div>
         </div>
       </div>
     </section>
@@ -1457,9 +1509,83 @@ function isCurrentUserVip(){
 /* 会员限制：非会员跳转到会员中心 */
 function requireVip(action){
   if (isCurrentUserVip()) return true;
-  toast('该功能需开通会员后使用', 2000);
-  setTimeout(() => go('v-vip'), 800);
+  toast('该功能需开通会员后使用，请联系管理员', 2500);
+  setTimeout(() => go('v-vip'), 1000);
   return false;
+}
+
+/* =========================================================
+   管理员后台（授权开通/撤销会员 · 管理用户）
+   ========================================================= */
+const ADMIN_PWD = 'admin123';
+
+function adminLogin(){
+  const pwd = $('#in-admin-pwd').value.trim();
+  if (pwd !== ADMIN_PWD){ toast('管理员密码错误'); return; }
+  store.set('ykz_admin', true);
+  $('#adminLoginCard').style.display = 'none';
+  $('#adminPanel').style.display = 'block';
+  renderAdminPanel();
+  toast('管理员登录成功');
+}
+function adminLogout(){
+  store.del('ykz_admin');
+  $('#adminLoginCard').style.display = 'block';
+  $('#adminPanel').style.display = 'none';
+  $('#in-admin-pwd').value = '';
+  toast('已退出管理员');
+}
+function isAdmin(){
+  return store.get('ykz_admin', false);
+}
+function renderAdminPanel(){
+  if (!isAdmin()) return;
+  const users = getUsers();
+  const phones = Object.keys(users);
+  $('#adminUserCount').textContent = phones.length;
+  let vipCount = 0;
+  phones.forEach(ph => {
+    if (getUserVip(ph).active && getUserVip(ph).expire > Date.now()) vipCount++;
+  });
+  $('#adminVipCount').textContent = vipCount;
+
+  const list = $('#adminUserList');
+  if (!phones.length){
+    list.innerHTML = '<div style="padding:16px;text-align:center;color:#8a93a5;font-size:13px;">暂无注册用户</div>';
+    return;
+  }
+  list.innerHTML = phones.map(ph => {
+    const u = users[ph];
+    const v = getUserVip(ph);
+    const isVip = v.active && v.expire > Date.now();
+    const plan = isVip ? (VIP_PLANS.find(p => p.id === v.plan) || {name:'会员'}).name + ' · 到期 ' + fmtExpire(v.expire) : '免费用户';
+    return '<div class="list-item"><span>' + ph + '</span><b style="color:' + (isVip ? '#c79a00' : '#8a93a5') + '">' + plan + '</b></div>';
+  }).join('');
+}
+function adminGrant(){
+  if (!isAdmin()){ toast('请先登录管理员'); return; }
+  const phone = $('#in-admin-phone').value.trim();
+  const planId = $('#in-admin-plan').value;
+  if (!/^1\d{10}$/.test(phone)){ toast('请输入正确的手机号'); return; }
+  const users = getUsers();
+  if (!users[phone]){ toast('该手机号未注册，请先注册登录'); return; }
+  const p = VIP_PLANS.find(x => x.id === planId);
+  if (!p){ toast('套餐不存在'); return; }
+  const startTs = (getUserVip(phone).active && getUserVip(phone).expire > Date.now()) ? getUserVip(phone).expire : Date.now();
+  const expireTs = startTs + p.months * 30 * 86400000;
+  saveUserVip(phone, { plan:p.id, expire:expireTs, active:true, grantedBy:'admin', grantedAt:Date.now() });
+  toast('已为 ' + phone + ' 开通 ' + p.name);
+  renderAdminPanel();
+}
+function adminRevoke(){
+  if (!isAdmin()){ toast('请先登录管理员'); return; }
+  const phone = $('#in-admin-phone').value.trim();
+  if (!/^1\d{10}$/.test(phone)){ toast('请输入正确的手机号'); return; }
+  const users = getUsers();
+  if (!users[phone]){ toast('该手机号未注册'); return; }
+  saveUserVip(phone, { plan:null, expire:0, active:false });
+  toast('已撤销 ' + phone + ' 的会员');
+  renderAdminPanel();
 }
 
 /* =========================================================
@@ -1502,8 +1628,9 @@ function renderVipPlans(){
           '<small> / ' + monthPrice + ' 元/月</small></div>' +
       '</div>' +
       '<div class="vip-plan-desc">' + p.desc + '</div>' +
-      '<button class="vip-plan-btn" onclick="openPay(\'' + p.id + '\')">' +
-        (isCur ? '当前套餐 · 续费' : '立即开通') + '</button>' +
+      (isCur
+        ? '<div class="vip-plan-cur">✅ 当前已开通 · 到期 ' + fmtExpire(cur.expire) + '</div>'
+        : '<div class="vip-plan-contact">📞 开通会员请联系管理员</div>') +
     '</div>';
   }).join('');
 }
@@ -1873,7 +2000,7 @@ let currentView = 'v-login';
 
 /* 页面切换：带方向感的左右滑动动画 */
 const VIEW_ORDER = ['v-home', 'v-verify', 'v-me']; // Tab 顺序，用于判断左右
-const VIEW_STACK = ['v-login', 'v-home', 'v-verify', 'v-me', 'v-edit', 'v-vip', 'v-print'];
+const VIEW_STACK = ['v-login', 'v-home', 'v-verify', 'v-me', 'v-edit', 'v-vip', 'v-admin', 'v-print'];
 
 function go(id, opts){
   opts = opts || {};
