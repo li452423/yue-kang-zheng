@@ -833,7 +833,7 @@ input[type=file].hidden-file{
           <div class="vip-row">
             <div class="vip-icon">👑</div>
             <div class="vip-info">
-              <div class="vip-title" id="vipTitle">免费用户</div>
+              <div class="vip-title" id="vipTitle">注册用户</div>
               <div class="vip-sub" id="vipSub">开通会员 · 解锁更多功能</div>
             </div>
             <div class="vip-arrow">›</div>
@@ -872,7 +872,7 @@ input[type=file].hidden-file{
           <div class="vip-hero-icon">👑</div>
           <div class="vip-hero-title">粤康证会员</div>
           <div class="vip-hero-sub">畅享高清打印 · 无水印保存 · 优先核验</div>
-          <div class="vip-hero-status" id="vipStatus">当前：免费用户</div>
+          <div class="vip-hero-status" id="vipStatus">当前：注册用户</div>
         </div>
 
         <div class="vip-plans" id="vipPlans">
@@ -1558,7 +1558,7 @@ function renderAdminPanel(){
     const u = users[ph];
     const v = getUserVip(ph);
     const isVip = v.active && v.expire > Date.now();
-    const plan = isVip ? (VIP_PLANS.find(p => p.id === v.plan) || {name:'会员'}).name + ' · 到期 ' + fmtExpire(v.expire) : '免费用户';
+    const plan = isVip ? (VIP_PLANS.find(p => p.id === v.plan) || {name:'会员'}).name + ' · 到期 ' + fmtExpire(v.expire) : '注册用户';
     return '<div class="list-item"><span>' + ph + '</span><b style="color:' + (isVip ? '#c79a00' : '#8a93a5') + '">' + plan + '</b></div>';
   }).join('');
 }
@@ -1648,9 +1648,9 @@ function renderVipStatus(){
     if (sub) sub.textContent = '到期时间：' + fmtExpire(v.expire);
     if (hero){ hero.textContent = '当前：' + plan.name + ' · 到期 ' + fmtExpire(v.expire); hero.classList.add('active'); }
   } else {
-    if (title) title.textContent = '免费用户';
+    if (title) title.textContent = '注册用户';
     if (sub) sub.textContent = '开通会员 · 解锁更多功能';
-    if (hero){ hero.textContent = '当前：免费用户'; hero.classList.remove('active'); }
+    if (hero){ hero.textContent = '当前：注册用户'; hero.classList.remove('active'); }
   }
 }
 let pendingPlan = null;
@@ -2491,7 +2491,7 @@ function logout(){
     // 非会员登录后提示开通
     if (!isCurrentUserVip()){
       setTimeout(() => {
-        toast('您当前为免费用户，请开通会员使用完整功能', 2800);
+        toast('您当前为注册用户，请开通会员使用完整功能', 2800);
       }, 1200);
     }
   } else {
