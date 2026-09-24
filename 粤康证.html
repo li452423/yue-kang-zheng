@@ -520,6 +520,12 @@ body{
   text-align:center;padding:10px 16px;
   font-size:12px;color:#999;border-top:1px dashed #ddd;
 }
+.qr-preview-box{
+  width:180px;height:180px;border:1px solid #e0e6f1;border-radius:8px;
+  background:#fff;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 6px rgba(0,0,0,.06);
+}
+.qr-preview-box canvas{width:100%;height:100%;}
 .avatar-picker{
   width:78px;height:78px;border-radius:50%;flex:0 0 auto;overflow:hidden;
   background:linear-gradient(160deg,#dbe5f5,#c3d4ee);border:2px solid #fff;
@@ -1137,6 +1143,14 @@ input[type=file].hidden-file{
           </div>
         </div>
 
+        <!-- ============ 核验二维码 ============ -->
+        <div style="display:flex;justify-content:center;margin-top:14px;">
+          <div class="qr-preview-box" id="editQrBox">
+            <canvas id="editQrCanvas" width="180" height="180"></canvas>
+          </div>
+        </div>
+        <div style="text-align:center;font-size:12px;color:#999;margin-top:6px;">扫码核验健康证真伪</div>
+
         <!-- ============ 补充信息 ============ -->
         <div class="form-section" style="margin-top:14px;">
           <div class="form-section-title">📋 补充信息</div>
@@ -1204,7 +1218,7 @@ input[type=file].hidden-file{
           <div class="form-section-title">📜 证照信息</div>
           <div class="form-row">
             <div class="form-label">证件编号</div>
-            <div class="form-control"><input class="form-input mono" id="f-certNo" placeholder="JKZ44010020260001"></div>
+            <div class="form-control"><input class="form-input mono" id="f-certNo" placeholder="JKZ44190020260001"></div>
           </div>
           <div class="form-row">
             <div class="form-label">发证日期</div>
@@ -1216,7 +1230,7 @@ input[type=file].hidden-file{
           </div>
           <div class="form-row">
             <div class="form-label">发证机关</div>
-            <div class="form-control"><input class="form-input" id="f-issueOrg" placeholder="如：广州市天河区卫生健康局"></div>
+            <div class="form-control"><input class="form-input" id="f-issueOrg" placeholder="如：东莞市市场监督管理局"></div>
           </div>
         </div>
 
@@ -1386,29 +1400,29 @@ function buildDefaultCert(){
     birthDate: '1998-06-15',
     age: 28,
     ethnicity: '汉族',
-    idCard: '440106199806151234',
+    idCard: '441900199806151234',
     phone: '13800138000',
-    nativePlace: '广东省广州市天河区',
-    address: '广东省广州市天河区天河北路 668 号',
+    nativePlace: '广东省东莞市东城街道',
+    address: '广东省东莞市东城街道新世界花园',
 
     /* 从业信息 */
-    workUnit: '广州市天河区XX餐饮管理有限公司',
+    workUnit: '东莞市东城新世界福华健康门诊部',
     workType: '餐饮服务',
     workPosition: '厨师',
 
     /* 体检信息 */
-    checkOrg: '广州市天河区人民医院',
-    checkOrgCode: '12440106MB2CXXXXXX',
+    checkOrg: '东莞东城新世界福华健康门诊部',
+    checkOrgCode: '12441900MB2CXXXXXX',
     checkDate: fmtDate(today),
     checkItems: '胸部X线、肠道致病菌、皮肤病、HAV-IgM/HEV-IgM、手部微生物',
     checkResult: '合格',
     conclusion: '未发现本人在患痢疾、伤寒、病毒性肝炎等消化道传染病，以及活动性肺结核、化脓性或渗出性皮肤病等有碍食品卫生的疾病。',
 
     /* 证照信息 */
-    certNo: 'JKZ44010020260001',
+    certNo: 'JKZ44190020260001',
     startTime: fmtDate(issue),
     endTime: fmtDate(end),
-    issueOrg: '广州市天河区卫生健康局',
+    issueOrg: '东莞市市场监督管理局',
 
     /* 头像（base64，留空则用首字母占位） */
     avatar: ''
@@ -2250,6 +2264,14 @@ function buildQr(){
           }
           const psQr = $('#psQr');
           if (psQr) psQr.src = qrDataUrl;
+          // 编辑页二维码
+          const editQr = $('#editQrCanvas');
+          if (editQr){
+            const ctx = editQr.getContext('2d');
+            const img = new Image();
+            img.onload = () => { ctx.clearRect(0,0,180,180); ctx.drawImage(img, 0, 0, 180, 180); };
+            img.src = qrDataUrl;
+          }
         } else {
           fallbackQrImage(tmp, text);
         }
@@ -2273,6 +2295,14 @@ function fallbackQrImage(tmp, text){
       qrDataUrl = cv.toDataURL('image/png');
     }catch(e){ qrDataUrl = url; }
     const psQr = $('#psQr'); if (psQr) psQr.src = qrDataUrl;
+    // 编辑页二维码
+    const editQr = $('#editQrCanvas');
+    if (editQr){
+      const ctx = editQr.getContext('2d');
+      const eimg = new Image();
+      eimg.onload = () => { ctx.clearRect(0,0,180,180); ctx.drawImage(eimg, 0, 0, 180, 180); };
+      eimg.src = qrDataUrl;
+    }
     const home = $('#homeQr');
     if (home){ home.innerHTML = ''; home.appendChild(img); img.style.width = '100%'; img.style.height = '100%'; }
     if (tmp && tmp.parentNode) document.body.removeChild(tmp);
