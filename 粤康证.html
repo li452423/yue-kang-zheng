@@ -919,7 +919,7 @@ input[type=file].hidden-file{
             <div class="vip-icon">👑</div>
             <div class="vip-info">
               <div class="vip-title" id="vipTitle">注册用户</div>
-              <div class="vip-sub" id="vipSub">开通会员 · 解锁更多功能</div>
+              <div class="vip-sub" id="vipSub">开通会员请联系管理员</div>
             </div>
             <div class="vip-arrow">›</div>
           </div>
@@ -2025,7 +2025,7 @@ function renderVipPlans(){
       '<div class="vip-plan-desc">' + p.desc + '</div>' +
       (isCur
         ? '<div class="vip-plan-cur">✅ 当前已开通 · 到期 ' + fmtExpire(cur.expire) + '</div>'
-        : '<div class="vip-plan-contact">📞 开通会员请联系管理员</div>') +
+        : '<div class="vip-plan-contact" onclick="contactAdminVip()">📞 开通会员请联系管理员</div>') +
     '</div>';
   }).join('');
 }
@@ -2044,41 +2044,13 @@ function renderVipStatus(){
     if (hero){ hero.textContent = '当前：' + plan.name + ' · 到期 ' + fmtExpire(v.expire); hero.classList.add('active'); }
   } else {
     if (title) title.textContent = '注册用户';
-    if (sub) sub.textContent = '开通会员 · 解锁更多功能';
+    if (sub) sub.textContent = '开通会员请联系管理员';
     if (hero){ hero.textContent = '当前：注册用户'; hero.classList.remove('active'); }
   }
 }
-let pendingPlan = null;
-function openPay(planId){
-  const p = VIP_PLANS.find(x => x.id === planId);
-  if (!p){ toast('套餐不存在'); return; }
-  pendingPlan = p;
-  $('#payAmount').textContent = '¥ ' + p.price.toFixed(2);
-  $('#payDesc').textContent = p.name + ' · ' + p.months + ' 个月会员权益';
-  $('#payModal').classList.add('show');
-}
-function closePay(){ $('#payModal').classList.remove('show'); pendingPlan = null; }
-function doPay(method){
-  if (!pendingPlan){ toast('请选择套餐'); return; }
-  const p = pendingPlan;
-  closePay();
-  toast('正在拉起' + (method === 'wechat' ? '微信' : '支付宝') + '支付…', 1500);
-  setTimeout(() => {
-    // 演示环境：模拟支付成功
-    const startTs = isVipActive() ? getVip().expire : Date.now();
-    const expireTs = startTs + p.months * 30 * 86400000;
-    const vipData = { plan:p.id, expire:expireTs, active:true, payMethod:method, payTime:Date.now() };
-    const phone = store.get('ykz_current_phone', null);
-    if (phone){
-      saveUserVip(phone, vipData);
-    } else {
-      store.set('ykz_vip', vipData);
-    }
-    toast('✅ 支付成功，已开通 ' + p.name, 2000);
-    renderVipStatus();
-    renderVipPlans();
-    updateNotice();
-  }, 1500);
+// 会员开通采用"管理员授权"模式，不支持自助支付
+function contactAdminVip(){
+  toast('📞 开通会员请联系管理员，由管理员在后台授权开通', 3000);
 }
 
 /* =========================================================
@@ -2894,7 +2866,7 @@ $('#btn-login').addEventListener('click', () => {
     setTimeout(() => {
       go('v-home');
       setTimeout(() => {
-        toast('请开通会员后使用完整功能', 2500);
+        toast('请联系管理员开通会员后使用完整功能', 2500);
         setTimeout(() => go('v-vip'), 1000);
       }, 500);
     }, 300);
@@ -2970,7 +2942,7 @@ function deregister(){
     // 非会员登录后提示开通
     if (!isCurrentUserVip()){
       setTimeout(() => {
-        toast('您当前为注册用户，请开通会员使用完整功能', 2800);
+        toast('您当前为注册用户，请联系管理员开通会员使用完整功能', 2800);
       }, 1200);
     }
   } else {
