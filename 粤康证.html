@@ -1556,7 +1556,21 @@ function saveEditForm(){
   saveCert(updated);
   if (newPhone) store.set('ykz_phone', newPhone);
 
+  // 同步更新子用户列表中的姓名（用于列表实时显示）
+  const curSub = getCurrentSubuser();
+  if (curSub){
+    curSub.name = newName;
+    curSub.gender = $('#f-gender').value;
+    const list = getSubusers();
+    const idx = list.findIndex(s => s.id === curSub.id);
+    if (idx >= 0){
+      list[idx] = curSub;
+      saveSubusers(list);
+    }
+  }
+
   renderAll();
+  renderSubuserList();
   initSealAndQr();
   toast('资料保存成功');
   setTimeout(() => go('v-me', {dir:'back'}), 400);
