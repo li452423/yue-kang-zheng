@@ -160,15 +160,15 @@ body{
 .cert-head-title{font-size:17px;font-weight:700;letter-spacing:1px;color:#1a1a1a;}
 
 .cert-main{display:flex;gap:14px;padding:16px 16px 12px;align-items:flex-start;}
-.cert-rows{flex:1;display:flex;flex-direction:column;gap:9px;padding:2px 0;}
+.cert-rows{flex:1;display:flex;flex-direction:column;gap:8px;padding:2px 0;min-width:0;}
 .cert-photo{
   width:78px;height:104px;flex:0 0 auto;border-radius:4px;
   background:#f0f0f0;border:1px solid #ddd;
   display:flex;align-items:center;justify-content:center;overflow:hidden;
 }
-.crow{display:flex;align-items:flex-start;font-size:13.5px;line-height:1.5;}
-.crow span{color:#888;width:72px;flex:0 0 auto;font-size:12.5px;}
-.crow b{font-weight:600;color:#1a1a1a;flex:1;word-break:break-all;}
+.crow{font-size:13.5px;line-height:1.5;color:#333;word-break:break-all;}
+.crow b{font-weight:600;color:#1a1a1a;}
+.crow-sub{font-size:11px;color:#999;line-height:1.4;padding-left:2px;}
 
 .cert-foot{
   display:flex;align-items:center;justify-content:center;
@@ -240,10 +240,10 @@ body{
   color:#1a1a1a;margin-bottom:22px;font-family:"SimSun","Songti SC","Microsoft YaHei",serif;
 }
 .ps-card-body{display:flex;gap:24px;align-items:flex-start;}
-.ps-info{flex:1;display:flex;flex-direction:column;gap:12px;}
-.ps-row{display:flex;font-size:15px;line-height:1.5;font-family:"SimSun","Songti SC","Microsoft YaHei",serif;}
-.ps-row span{color:#666;width:80px;flex:0 0 auto;}
-.ps-row b{font-weight:600;color:#1a1a1a;flex:1;word-break:break-all;}
+.ps-info{flex:1;display:flex;flex-direction:column;gap:10px;min-width:0;}
+.ps-row{font-size:15px;line-height:1.5;color:#333;word-break:break-all;font-family:"SimSun","Songti SC","Microsoft YaHei",serif;}
+.ps-row b{font-weight:600;color:#1a1a1a;}
+.ps-row-sub{font-size:12px;color:#999;line-height:1.4;font-family:"SimSun","Songti SC","Microsoft YaHei",serif;}
 .ps-photo{
   width:110px;height:150px;flex:0 0 auto;background:#f0f0f0;
   border:1px solid #ccc;display:flex;align-items:center;justify-content:center;overflow:hidden;
@@ -722,11 +722,12 @@ input[type=file].hidden-file{
 
           <div class="cert-main">
             <div class="cert-rows">
-              <div class="crow"><span>姓　名</span><b id="c-name">--</b></div>
-              <div class="crow"><span>性　别</span><b id="c-gender">--</b></div>
-              <div class="crow"><span>身份证号</span><b id="c-idcard" class="mono">--</b></div>
-              <div class="crow"><span>体检单位</span><b id="c-checkOrg">--</b></div>
-              <div class="crow"><span>体检日期</span><b id="c-checkDate">--</b></div>
+              <div class="crow">姓名：<b id="c-name">--</b></div>
+              <div class="crow">性别：<b id="c-gender">--</b></div>
+              <div class="crow">身份证号：<b id="c-idcard" class="mono">--</b></div>
+              <div class="crow-sub">（或其它有效证明）</div>
+              <div class="crow">健康体检单位：<b id="c-checkOrg">--</b></div>
+              <div class="crow">体检日期：<b id="c-checkDate">--</b></div>
             </div>
             <div class="cert-photo" id="certPhoto">
               <svg viewBox="0 0 24 24" width="34" height="34" fill="#c3cbdb">
@@ -774,11 +775,12 @@ input[type=file].hidden-file{
               <div class="ps-card-title">广东省食品从业人员健康证明</div>
               <div class="ps-card-body">
                 <div class="ps-info">
-                  <div class="ps-row"><span>姓　名</span><b id="ps-name">--</b></div>
-                  <div class="ps-row"><span>性　别</span><b id="ps-gender">--</b></div>
-                  <div class="ps-row"><span>身份证号</span><b id="ps-idcard" class="mono">--</b></div>
-                  <div class="ps-row"><span>体检单位</span><b id="ps-checkOrg">--</b></div>
-                  <div class="ps-row"><span>体检日期</span><b id="ps-checkDate">--</b></div>
+                  <div class="ps-row">姓名：<b id="ps-name">--</b></div>
+                  <div class="ps-row">性别：<b id="ps-gender">--</b></div>
+                  <div class="ps-row">身份证号：<b id="ps-idcard" class="mono">--</b></div>
+                  <div class="ps-row-sub">（或其它有效证明）</div>
+                  <div class="ps-row">健康体检单位：<b id="ps-checkOrg">--</b></div>
+                  <div class="ps-row">体检日期：<b id="ps-checkDate">--</b></div>
                 </div>
                 <div class="ps-photo" id="psPhoto">
                   <svg viewBox="0 0 24 24" width="40" height="40" fill="#c3cbdb">
@@ -2543,39 +2545,46 @@ function saveCertImage(){
   function finishFront(){
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    const labelX = infoX;
-    const valX = infoX + 110;
+    const x = infoX;
     let ry = infoY;
     const fs = 20;
+    const smallFs = 14;
+    // 文本最大宽度（不超过照片左边界）
+    const textMaxW = photoX - x - 12;
 
-    drawRow(ctx, labelX, valX, ry, '姓　名', c.name || '', '#1a1a1a', fs);
-    ry += 42;
-    drawRow(ctx, labelX, valX, ry, '性　别', c.gender || '', '#1a1a1a', fs);
-    ry += 42;
-    drawRow(ctx, labelX, valX, ry, '身份证号', c.idCard || '', '#1a1a1a', fs - 1);
-    ry += 42;
+    // 辅助：画"标签：值"，值自动换行
+    function drawField(label, value, color, vFs){
+      ctx.fillStyle = '#444';
+      ctx.font = fs + 'px "SimSun","Songti SC","Microsoft YaHei",serif';
+      ctx.fillText(label, x, ry);
+      const labelW = ctx.measureText(label).width;
+      const valX = x + labelW;
+      ctx.fillStyle = color || '#1a1a1a';
+      ctx.font = 'bold ' + (vFs || fs) + 'px "SimSun","Songti SC","Microsoft YaHei",serif';
+      const lines = wrapText(ctx, value, textMaxW - labelW);
+      lines.forEach((ln, i) => {
+        ctx.fillText(ln, i === 0 ? valX : x, ry + i * ((vFs || fs) + 6));
+      });
+      ry += Math.max(fs + 6, lines.length * ((vFs || fs) + 6));
+    }
 
-    // 健康体检单位（可能较长，自动换行）
+    drawField('姓名：', c.name || '', '#1a1a1a', fs);
+    drawField('性别：', c.gender || '', '#1a1a1a', fs);
+    drawField('身份证号：', c.idCard || '', '#1a1a1a', fs - 1);
+
+    // （或其它有效证明）小字体提示
     ctx.fillStyle = '#888';
-    ctx.font = fs + 'px "SimSun","Songti SC","Microsoft YaHei",serif';
-    ctx.fillText('健康体检单位', labelX, ry);
-    ctx.fillStyle = '#1a1a1a';
-    ctx.font = 'bold ' + fs + 'px "SimSun","Songti SC","Microsoft YaHei",serif';
+    ctx.font = smallFs + 'px "SimSun","Songti SC","Microsoft YaHei",serif';
+    ctx.fillText('（或其它有效证明）', x, ry);
+    ry += smallFs + 10;
+
+    // 健康体检单位
     const org = c.checkOrg || c.workUnit || '';
-    // 限制宽度，超出换行
-    const maxW = photoX - valX - 10;
-    const lines = wrapText(ctx, org, maxW);
-    lines.forEach((ln, i) => ctx.fillText(ln, valX, ry + i * (fs + 6)));
-    ry += Math.max(42, lines.length * (fs + 6));
+    drawField('健康体检单位：', org, '#1a1a1a', fs - 1);
 
     // 体检日期（有效期一年）
-    ctx.fillStyle = '#888';
-    ctx.font = fs + 'px "SimSun","Songti SC","Microsoft YaHei",serif';
-    ctx.fillText('体检日期', labelX, ry);
-    ctx.fillStyle = '#1a1a1a';
-    ctx.font = 'bold ' + fs + 'px "SimSun","Songti SC","Microsoft YaHei",serif';
     const dateText = (c.checkDate || '') + '（有效期一年）';
-    ctx.fillText(dateText, valX, ry);
+    drawField('体检日期：', dateText, '#1a1a1a', fs - 1);
 
     drawBack();
   }
