@@ -851,7 +851,7 @@ input[type=file].hidden-file{
         </div>
 
         <div class="list-card">
-          <div class="list-item link" onclick="go('v-subusers')"><span>👨‍👩‍👧‍👦 管理子用户</span><b id="subuserCount">0 人 ›</b></div>
+          <div class="list-item link" onclick="go('v-subusers')"><span>👥 管理我的客户</span><b id="subuserCount">0 人 ›</b></div>
           <div class="list-item link" onclick="if(requireVip('edit'))go('v-edit')"><span>填写资料 / 上传头像</span><b>›</b></div>
           <div class="list-item link" onclick="if(requireVip('print'))go('v-print')"><span>打印健康证</span><b>›</b></div>
           <div class="list-item link" onclick="if(requireVip('qr'))openQr()"><span>出示核验二维码</span><b>›</b></div>
@@ -868,21 +868,21 @@ input[type=file].hidden-file{
     <section class="view" id="v-subusers">
       <div class="navbar">
         <button class="nav-back" onclick="go('v-me',{dir:'back'})">‹</button>
-        <div class="nav-title">管理子用户</div>
+        <div class="nav-title">管理我的客户</div>
         <div class="nav-pad"></div>
       </div>
       <div class="scroll" style="padding:0 14px;">
         <div class="notice ok" style="margin-top:14px;">
-          <b>👨‍👩‍👧‍👦 子用户管理</b><br>
-          可为家人、员工等添加子用户，每个子用户拥有独立的健康证资料，可随时切换管理。
+          <b>👥 客户管理</b><br>
+          可添加客户信息，每个客户拥有独立的健康证资料，可随时切换管理。
         </div>
 
         <div class="actions" style="margin:14px 0;">
-          <button class="btn primary block" onclick="showAddSubuser()">➕ 添加子用户</button>
+          <button class="btn primary block" onclick="showAddSubuser()">➕ 添加新客户</button>
         </div>
 
         <div class="list-card" id="subuserList" style="margin-top:0;">
-          <div style="padding:30px 16px;text-align:center;color:var(--muted);font-size:13px;">暂无子用户，点击上方按钮添加</div>
+          <div style="padding:30px 16px;text-align:center;color:var(--muted);font-size:13px;">暂无客户，点击上方按钮添加</div>
         </div>
 
         <div class="safe-bottom"></div>
@@ -1193,7 +1193,7 @@ input[type=file].hidden-file{
 <!-- 添加子用户弹窗 -->
 <div class="modal" id="subuserModal" onclick="closeSubuserModal()">
   <div class="modal-card" style="max-width:360px;text-align:left;" onclick="event.stopPropagation()">
-    <div class="modal-title">添加子用户</div>
+    <div class="modal-title">添加新客户</div>
     <div class="form-row" style="margin-bottom:10px;">
       <div class="form-label">姓　名</div>
       <div class="form-control"><input class="form-input" id="su-name" placeholder="请输入姓名"></div>
@@ -1609,7 +1609,7 @@ function addSubuser(){
   renderSubuserList();
   renderAll();
   initSealAndQr();
-  toast('子用户添加成功，已切换为当前管理');
+  toast('客户添加成功，已切换为当前管理');
   go('v-home');
 }
 
@@ -1634,7 +1634,7 @@ function editSubuser(id){
 }
 
 function deleteSubuser(id){
-  if (!confirm('确定删除该子用户吗？其证照数据将一并删除。')) return;
+  if (!confirm('确定删除该客户吗？其证照数据将一并删除。')) return;
   let list = getSubusers();
   list = list.filter(s => s.id !== id);
   saveSubusers(list);
@@ -1645,7 +1645,7 @@ function deleteSubuser(id){
   renderSubuserList();
   renderAll();
   initSealAndQr();
-  toast('子用户已删除');
+  toast('客户已删除');
 }
 
 function renderSubuserList(){
@@ -1688,7 +1688,7 @@ function renderSubuserList(){
       '</div>' +
       '<div style="display:flex;gap:8px;">' +
         (isCur ? '<button class="btn ghost" style="flex:1;padding:8px;font-size:13px;background:#e8f0ff;color:var(--blue);border-color:#cfe0ff;" disabled>✓ 当前管理中</button>' : '<button class="btn primary" style="flex:1;padding:8px;font-size:13px;" onclick="switchSubuser(\'' + s.id + '\')">切换管理</button>') +
-        '<button class="btn ghost" style="flex:0 0 auto;padding:8px 12px;font-size:13px;" onclick="editSubuser(\'' + s.id + '\')">✏️ 编辑</button>' +
+        '<button class="btn ghost" style="flex:0 0 auto;padding:8px 12px;font-size:13px;" onclick="editSubuser(\'' + s.id + '\')">✏️ 客户编辑/修改</button>' +
         '<button class="btn danger" style="flex:0 0 auto;padding:8px 14px;font-size:13px;" onclick="deleteSubuser(\'' + s.id + '\')">删除</button>' +
       '</div>' +
     '</div>';
@@ -2171,7 +2171,7 @@ function renderAll(){
   const curSub = getCurrentSubuser();
   if (curSub){
     if (badge) badge.style.display = 'flex';
-    if (badgeText) badgeText.textContent = '👤 正在管理：' + curSub.name + '（' + curSub.relation + '）';
+    if (badgeText) badgeText.textContent = '👤 正在管理客户：' + curSub.name + '（' + curSub.relation + '）';
   } else {
     if (badge) badge.style.display = 'none';
   }
