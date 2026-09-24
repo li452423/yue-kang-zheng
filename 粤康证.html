@@ -154,47 +154,32 @@ body{
   border:1px solid #eaeffa;
 }
 .cert-head{
-  display:flex;align-items:center;gap:11px;padding:15px 16px;
-  background:linear-gradient(135deg,#f4f8ff,#eaf1ff);
-  border-bottom:1px solid #e3ecfd;
+  text-align:center;padding:16px 16px 8px;
+  border-bottom:1px solid #eee;
 }
-.cert-emblem{
-  width:36px;height:36px;flex:0 0 auto;border-radius:10px;
-  background:linear-gradient(135deg,#cf0a1e,#a30816);color:#fff;
-  display:flex;align-items:center;justify-content:center;
-  font-size:19px;font-weight:700;box-shadow:0 4px 10px rgba(207,10,30,.28);
-}
-.cert-head-title{font-size:14.5px;font-weight:700;letter-spacing:.4px;}
-.cert-head-sub{font-size:9px;color:var(--muted);margin-top:3px;letter-spacing:.2px;}
+.cert-head-title{font-size:17px;font-weight:700;letter-spacing:1px;color:#1a1a1a;}
 
-.cert-main{display:flex;gap:14px;padding:16px 16px 12px;}
+.cert-main{display:flex;gap:14px;padding:16px 16px 12px;align-items:flex-start;}
+.cert-rows{flex:1;display:flex;flex-direction:column;gap:9px;padding:2px 0;}
 .cert-photo{
-  width:74px;height:96px;flex:0 0 auto;border-radius:8px;
-  background:linear-gradient(160deg,#f0f3f9,#dfe6f2);
-  border:1px solid #e0e6f1;display:flex;align-items:center;justify-content:center;
+  width:78px;height:104px;flex:0 0 auto;border-radius:4px;
+  background:#f0f0f0;border:1px solid #ddd;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
 }
-.cert-rows{flex:1;display:flex;flex-direction:column;justify-content:space-between;padding:2px 0;}
-.crow{display:flex;align-items:baseline;font-size:13.5px;line-height:1.5;}
-.crow span{color:var(--muted);width:70px;flex:0 0 auto;font-size:12.5px;}
-.crow b{font-weight:600;color:#151b26;}
-.crow b.ok{color:var(--green);}
-.cert-meta{padding:0 16px 12px;display:flex;flex-direction:column;gap:6px;}
-.cert-meta .crow{border-top:1px dashed #eef2f8;padding-top:6px;}
-.cert-meta .crow:first-child{border-top:0;padding-top:0;}
+.crow{display:flex;align-items:flex-start;font-size:13.5px;line-height:1.5;}
+.crow span{color:#888;width:72px;flex:0 0 auto;font-size:12.5px;}
+.crow b{font-weight:600;color:#1a1a1a;flex:1;word-break:break-all;}
 
 .cert-foot{
-  display:flex;align-items:flex-end;justify-content:space-between;
-  padding:12px 16px 16px;gap:12px;
-  background:linear-gradient(180deg,#fff,#fbfcff);
-  border-top:1px solid #f0f4fa;
+  display:flex;align-items:center;justify-content:center;
+  padding:12px 16px 16px;
+  border-top:1px solid #f0f0f0;
 }
 .qr-wrap{
   width:84px;height:84px;flex:0 0 auto;border:1px solid #e6ebf4;
   border-radius:8px;overflow:hidden;background:#fff;padding:4px;
 }
 .qr-wrap canvas,.qr-wrap img{width:100%!important;height:100%!important;display:block;}
-.seal-wrap{width:104px;height:104px;flex:0 0 auto;opacity:.94;}
-.seal-wrap img{width:100%;height:100%;display:block;}
 
 .actions{display:flex;gap:10px;margin-top:14px;}
 .actions .btn{flex:1;}
@@ -243,41 +228,37 @@ body{
 }
 .bottom-bar .btn{flex:1;}
 
-/* 打印版式内部 */
-.ps-top{text-align:center;border-bottom:2px solid #cf0a1e;padding-bottom:12px;}
-.ps-org{font-size:14px;letter-spacing:8px;color:#5b6478;font-family:-apple-system,"PingFang SC",sans-serif;}
-.ps-title{font-size:33px;font-weight:700;letter-spacing:6px;margin:16px 0 8px;color:#0d1b33;}
-.ps-en{font-size:10.5px;letter-spacing:1.6px;color:#93a0b5;font-family:-apple-system,sans-serif;text-transform:uppercase;}
-.ps-no{
-  display:flex;justify-content:space-between;align-items:center;
-  font-size:13px;color:#5b6478;margin:22px 0 10px;
-  font-family:-apple-system,"PingFang SC",sans-serif;
+/* 打印版式内部 —— 正面/背面卡片 */
+.print-sheet{display:flex;flex-direction:column;align-items:center;gap:24px;padding:30px 20px;}
+.ps-card{
+  width:100%;max-width:560px;background:#fff;
+  border:2px solid #999;border-radius:12px;padding:24px 28px;
+  box-sizing:border-box;
 }
-.ps-no .val{color:#cf0a1e;font-weight:700;}
-.ps-table{
-  width:100%;border-collapse:collapse;font-size:15px;
-  font-family:-apple-system,"PingFang SC",sans-serif;
+.ps-card-title{
+  text-align:center;font-size:22px;font-weight:700;letter-spacing:2px;
+  color:#1a1a1a;margin-bottom:22px;font-family:"SimSun","Songti SC","Microsoft YaHei",serif;
 }
-.ps-table td{border:1px solid #c9d3e4;padding:13px 12px;line-height:1.4;}
-.ps-table td.k{background:#f5f8fd;color:#5b6478;font-size:13.5px;text-align:center;white-space:nowrap;}
-.ps-table td.v{font-weight:600;color:#101828;}
-.ps-table td.hl{color:#cf0a1e;font-weight:700;}
-.ps-mid{flex:1;display:flex;align-items:flex-end;justify-content:space-between;padding:26px 6px 18px;gap:20px;}
-.ps-qrbox{text-align:center;}
-.ps-qrbox img{width:126px;height:126px;display:block;border:1px solid #e2e8f2;padding:5px;border-radius:6px;background:#fff;}
-.ps-qrbox .cap{font-size:11.5px;color:#8a93a5;margin-top:7px;font-family:-apple-system,sans-serif;letter-spacing:1px;}
-.ps-sealbox{text-align:right;padding-bottom:6px;}
-.ps-sealbox img{width:158px;height:158px;display:block;margin-left:auto;}
-.ps-sealbox .cap{font-size:11.5px;color:#8a93a5;margin-top:4px;font-family:-apple-system,sans-serif;letter-spacing:1px;}
-.ps-note{
-  border-top:1px dashed #cfd8e8;padding-top:14px;font-size:12px;color:#7a8598;
-  line-height:1.9;font-family:-apple-system,"PingFang SC",sans-serif;
+.ps-card-body{display:flex;gap:24px;align-items:flex-start;}
+.ps-info{flex:1;display:flex;flex-direction:column;gap:12px;}
+.ps-row{display:flex;font-size:15px;line-height:1.5;font-family:"SimSun","Songti SC","Microsoft YaHei",serif;}
+.ps-row span{color:#666;width:80px;flex:0 0 auto;}
+.ps-row b{font-weight:600;color:#1a1a1a;flex:1;word-break:break-all;}
+.ps-photo{
+  width:110px;height:150px;flex:0 0 auto;background:#f0f0f0;
+  border:1px solid #ccc;display:flex;align-items:center;justify-content:center;overflow:hidden;
 }
-.ps-note b{color:#5b6478;}
-.ps-foot{
-  margin-top:12px;display:flex;justify-content:space-between;
-  font-size:11px;color:#a2acbd;font-family:-apple-system,sans-serif;letter-spacing:.5px;
+.ps-photo img{width:100%;height:100%;object-fit:cover;display:block;}
+.ps-card.back{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:200px;gap:14px;
 }
+.ps-back-title{
+  font-size:24px;font-weight:700;letter-spacing:3px;color:#1a1a1a;
+  font-family:"SimSun","Songti SC","Microsoft YaHei",serif;
+}
+.ps-qr-center{text-align:center;margin-top:8px;}
+.ps-qr-center img{width:130px;height:130px;border:1px solid #e2e8f2;padding:6px;border-radius:6px;background:#fff;}
 
 /* ---------- 核验页 ---------- */
 .verify-hero{
@@ -681,7 +662,6 @@ input[type=file].hidden-file{
     padding:0!important;box-shadow:none!important;border:0!important;
     display:block!important;
   }
-  .ps-mid{flex:none!important;padding:26px 6px 18px!important;}
 }
 </style>
 </head>
@@ -737,37 +717,26 @@ input[type=file].hidden-file{
 
         <div class="cert-card">
           <div class="cert-head">
-            <div class="cert-emblem">粤</div>
-            <div>
-              <div class="cert-head-title">广东省食品从业人员健康证明</div>
-              <div class="cert-head-sub">Guangdong Food Practitioner Health Certificate</div>
-            </div>
+            <div class="cert-head-title">广东省食品从业人员健康证明</div>
           </div>
 
           <div class="cert-main">
+            <div class="cert-rows">
+              <div class="crow"><span>姓　名</span><b id="c-name">--</b></div>
+              <div class="crow"><span>性　别</span><b id="c-gender">--</b></div>
+              <div class="crow"><span>身份证号</span><b id="c-idcard" class="mono">--</b></div>
+              <div class="crow"><span>体检单位</span><b id="c-checkOrg">--</b></div>
+              <div class="crow"><span>体检日期</span><b id="c-checkDate">--</b></div>
+            </div>
             <div class="cert-photo" id="certPhoto">
               <svg viewBox="0 0 24 24" width="34" height="34" fill="#c3cbdb">
                 <path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5z"/>
               </svg>
             </div>
-            <div class="cert-rows">
-              <div class="crow"><span>姓　名</span><b id="c-name">--</b></div>
-              <div class="crow"><span>性　别</span><b id="c-gender">--</b></div>
-              <div class="crow"><span>年　龄</span><b id="c-age">--</b></div>
-              <div class="crow"><span>证件编号</span><b id="c-no" class="mono">--</b></div>
-            </div>
-          </div>
-
-          <div class="cert-meta">
-            <div class="crow"><span>从业类别</span><b id="c-type">--</b></div>
-            <div class="crow"><span>体检结果</span><b id="c-result" class="ok">--</b></div>
-            <div class="crow"><span>有效期至</span><b id="c-end">--</b></div>
-            <div class="crow"><span>发证机关</span><b id="c-org">--</b></div>
           </div>
 
           <div class="cert-foot">
             <div class="qr-wrap" id="homeQr"></div>
-            <div class="seal-wrap"><img id="homeSeal" alt="电子印章"></div>
           </div>
         </div>
 
@@ -782,7 +751,7 @@ input[type=file].hidden-file{
           <ul>
             <li>电子健康证与纸质证照具有同等法律效力，可直接出示或打印使用。</li>
             <li>健康证有效期一年，到期前 30 天请及时办理续期。</li>
-            <li>打印时请使用 A4 纸张，保持二维码与印章清晰完整。</li>
+            <li>打印时请使用 A4 纸张，保持二维码清晰完整。</li>
           </ul>
         </div>
         <div class="safe-bottom"></div>
@@ -800,57 +769,34 @@ input[type=file].hidden-file{
       <div class="scroll print-scroll">
         <div class="a4-preview" id="a4Preview">
           <div class="print-sheet" id="printSheet">
-            <div class="ps-top">
-              <div class="ps-org">广东省卫生健康委员会</div>
-              <div class="ps-title">健康证明</div>
-              <div class="ps-en">Guangdong Food Practitioner Health Certificate</div>
-            </div>
-
-            <div class="ps-no">
-              <div>证件编号：<span class="val mono" id="ps-no">--</span></div>
-              <div>签发日期：<span id="ps-issue">--</span></div>
-            </div>
-
-            <table class="ps-table">
-              <tr>
-                <td class="k">姓　名</td><td class="v" id="ps-name">--</td>
-                <td class="k">性　别</td><td class="v" id="ps-gender">--</td>
-                <td class="k">年　龄</td><td class="v" id="ps-age">--</td>
-              </tr>
-              <tr>
-                <td class="k">身份证号</td><td class="v mono" colspan="3" id="ps-idcard">--</td>
-                <td class="k">从业类别</td><td class="v" id="ps-type">--</td>
-              </tr>
-              <tr>
-                <td class="k">体检日期</td><td class="v" id="ps-check">--</td>
-                <td class="k">体检结果</td><td class="v hl" id="ps-result">--</td>
-                <td class="k">发证日期</td><td class="v" id="ps-start">--</td>
-              </tr>
-              <tr>
-                <td class="k">有效期至</td><td class="v hl" colspan="3" id="ps-end">--</td>
-                <td class="k">发证机关</td><td class="v" id="ps-org">--</td>
-              </tr>
-            </table>
-
-            <div class="ps-mid">
-              <div class="ps-qrbox">
-                <img id="psQr" alt="核验二维码">
-                <div class="cap">扫 码 核 验 真 伪</div>
-              </div>
-              <div class="ps-sealbox">
-                <img id="psSeal" alt="电子印章">
-                <div class="cap">发证机关（电子印章）</div>
+            <!-- 正面 -->
+            <div class="ps-card front">
+              <div class="ps-card-title">广东省食品从业人员健康证明</div>
+              <div class="ps-card-body">
+                <div class="ps-info">
+                  <div class="ps-row"><span>姓　名</span><b id="ps-name">--</b></div>
+                  <div class="ps-row"><span>性　别</span><b id="ps-gender">--</b></div>
+                  <div class="ps-row"><span>身份证号</span><b id="ps-idcard" class="mono">--</b></div>
+                  <div class="ps-row"><span>体检单位</span><b id="ps-checkOrg">--</b></div>
+                  <div class="ps-row"><span>体检日期</span><b id="ps-checkDate">--</b></div>
+                </div>
+                <div class="ps-photo" id="psPhoto">
+                  <svg viewBox="0 0 24 24" width="40" height="40" fill="#c3cbdb">
+                    <path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5z"/>
+                  </svg>
+                </div>
               </div>
             </div>
 
-            <div class="ps-note">
-              <b>使用说明：</b>1. 本证明由广东省食品从业人员健康检查管理平台统一签发，电子证照与纸质证照具有同等法律效力。
-              2. 扫描左侧二维码可在线核验证照真伪及有效状态。3. 本证明涂改、复印无效，有效期届满自动失效。
-              4. 举报咨询电话：12345。
+            <!-- 背面 -->
+            <div class="ps-card back">
+              <div class="ps-back-title">广东省食品从业人员</div>
+              <div class="ps-back-title">健康证明</div>
             </div>
-            <div class="ps-foot">
-              <span>核验地址：wsjkw.gd.gov.cn/hcert</span>
-              <span id="ps-printtime">打印时间：--</span>
+
+            <!-- 二维码 -->
+            <div class="ps-qr-center">
+              <img id="psQr" alt="核验二维码">
             </div>
           </div>
         </div>
@@ -2294,14 +2240,14 @@ function renderAll(){
   if (countEl) countEl.textContent = getSubusers().length + ' 人 ›';
 
   // 首页
-  $('#c-name').textContent   = c.name;
-  $('#c-gender').textContent = c.gender;
-  $('#c-age').textContent    = c.age + ' 岁';
-  $('#c-no').textContent     = c.certNo;
-  $('#c-type').textContent   = (c.workType || '') + (c.workPosition ? ' · ' + c.workPosition : '');
-  $('#c-result').textContent = c.checkResult;
-  $('#c-end').textContent    = c.endTime;
-  $('#c-org').textContent    = c.issueOrg;
+  $('#c-name').textContent      = c.name;
+  $('#c-gender').textContent    = c.gender;
+  const idc = $('#c-idcard');
+  if (idc) idc.textContent = c.idCard || '--';
+  const orgEl = $('#c-checkOrg');
+  if (orgEl) orgEl.textContent = c.checkOrg || c.workUnit || '--';
+  const dateEl = $('#c-checkDate');
+  if (dateEl) dateEl.textContent = (c.checkDate || '--') + '（有效期一年）';
 
   // 头像渲染（首页 hero / 我的页 hero / 证照卡照片）
   const fillAvatar = (el, text) => {
@@ -2346,19 +2292,19 @@ function renderAll(){
   if (subCountEl) subCountEl.textContent = getSubusers().length + ' 人';
 
   // 打印页
-  $('#ps-no').textContent     = c.certNo;
-  $('#ps-issue').textContent  = c.startTime;
-  $('#ps-name').textContent   = c.name;
-  $('#ps-gender').textContent = c.gender;
-  $('#ps-age').textContent    = c.age + ' 岁';
-  $('#ps-idcard').textContent = c.idCard;
-  $('#ps-type').textContent   = (c.workType || '') + (c.workPosition ? ' · ' + c.workPosition : '');
-  $('#ps-check').textContent  = c.checkDate;
-  $('#ps-result').textContent = c.checkResult;
-  $('#ps-start').textContent  = c.startTime;
-  $('#ps-end').textContent    = c.endTime;
-  $('#ps-org').textContent    = c.issueOrg;
-  $('#ps-printtime').textContent = '打印时间：' + fmtDateTime(new Date());
+  const psName = $('#ps-name'); if (psName) psName.textContent = c.name;
+  const psGender = $('#ps-gender'); if (psGender) psGender.textContent = c.gender;
+  const psIdcard = $('#ps-idcard'); if (psIdcard) psIdcard.textContent = c.idCard || '--';
+  const psOrg = $('#ps-checkOrg'); if (psOrg) psOrg.textContent = c.checkOrg || c.workUnit || '--';
+  const psDate = $('#ps-checkDate'); if (psDate) psDate.textContent = (c.checkDate || '--') + '（有效期一年）';
+  const psPhoto = $('#psPhoto');
+  if (psPhoto){
+    if (c.avatar){
+      psPhoto.innerHTML = '<img src="' + c.avatar + '" alt="照片">';
+    } else {
+      psPhoto.innerHTML = '<svg viewBox="0 0 24 24" width="40" height="40" fill="#c3cbdb"><path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5z"/></svg>';
+    }
+  }
 
   updateNotice();
   renderVipStatus();
@@ -2383,13 +2329,7 @@ function updateNotice(){
 }
 
 function initSealAndQr(){
-  // 印章
-  const url = buildSeal();
-  const homeSeal = $('#homeSeal');
-  const psSeal   = $('#psSeal');
-  if (homeSeal) homeSeal.src = url;
-  if (psSeal)   psSeal.src   = url;
-  // 二维码
+  // 二维码（已移除红色公章）
   buildQr();
 }
 
@@ -2531,205 +2471,166 @@ function closeQr(){ $('#qrModal').classList.remove('show'); }
 function saveCertImage(){
   toast('正在生成图片…');
   const c = getCert();
-  const W = 800, H = 1080;
+  const W = 800, H = 1240;
   const cv = document.createElement('canvas');
   cv.width = W; cv.height = H;
   const ctx = cv.getContext('2d');
 
-  // 背景
-  const bg = ctx.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#f2f4f8');
-  bg.addColorStop(1, '#e6ebf4');
-  ctx.fillStyle = bg;
+  // 背景（浅灰，模拟纸张）
+  ctx.fillStyle = '#f5f5f5';
   ctx.fillRect(0, 0, W, H);
 
-  // 卡片背景
-  const cardX = 30, cardY = 30, cardW = W - 60, cardH = H - 60;
-  roundRect(ctx, cardX, cardY, cardW, cardH, 28);
+  // ========== 正面卡片 ==========
+  const fX = 60, fY = 50, fW = W - 120, fH = 460;
+  roundRect(ctx, fX, fY, fW, fH, 16);
   ctx.fillStyle = '#ffffff';
   ctx.fill();
-  ctx.strokeStyle = '#eaeffa';
+  ctx.strokeStyle = '#b8b8b8';
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  // 顶部渐变条
-  const headGrad = ctx.createLinearGradient(cardX, cardY, cardX + cardW, cardY);
-  headGrad.addColorStop(0, '#2b7bff');
-  headGrad.addColorStop(1, '#1257d6');
-  roundRect(ctx, cardX, cardY, cardW, 130, 28);
-  ctx.save();
-  ctx.beginPath();
-  roundRect(ctx, cardX, cardY, cardW, 130, 28);
-  ctx.clip();
-  ctx.fillStyle = headGrad;
-  ctx.fillRect(cardX, cardY, cardW, 130);
-  ctx.restore();
-
-  // 顶部标题
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 32px "PingFang SC","Microsoft YaHei",sans-serif';
+  // 正面标题
+  ctx.fillStyle = '#1a1a1a';
+  ctx.font = 'bold 30px "SimSun","Songti SC","Microsoft YaHei",serif';
   ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('广东省食品从业人员健康证明', W / 2, cardY + 48);
-  ctx.font = '13px "PingFang SC","Microsoft YaHei",sans-serif';
-  ctx.globalAlpha = 0.85;
-  ctx.fillText('Guangdong Food Practitioner Health Certificate', W / 2, cardY + 86);
-  ctx.globalAlpha = 1;
-
-  // 左侧国徽圆标
-  ctx.fillStyle = '#cf0a1e';
-  ctx.beginPath();
-  ctx.arc(cardX + 55, cardY + 65, 24, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 22px "Songti SC","SimSun",serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('粤', cardX + 55, cardY + 65);
-
-  // 信息区
-  let y = cardY + 160;
-  ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
+  ctx.fillText('广东省食品从业人员健康证明', W / 2, fY + 28);
+
+  // 正面信息区（左文右图）
+  const infoX = fX + 40;
+  const infoY = fY + 95;
+  const photoW = 150, photoH = 200;
+  const photoX = fX + fW - photoW - 40;
+  const photoY = infoY;
 
   // 照片框
-  const photoX = cardX + 30, photoY = y, photoW = 130, photoH = 170;
-  ctx.fillStyle = '#f0f3f9';
-  roundRect(ctx, photoX, photoY, photoW, photoH, 8);
-  ctx.fill();
-  ctx.strokeStyle = '#e0e6f1';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
+  ctx.fillStyle = '#f0f0f0';
+  ctx.fillRect(photoX, photoY, photoW, photoH);
+  ctx.strokeStyle = '#cccccc';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(photoX, photoY, photoW, photoH);
 
-  // 画头像（同步加载 base64，避免导出空白）
+  // 画头像
   const avatarSrc = c.avatar || c.photo;
   if (avatarSrc){
     const img = new Image();
     img.onload = () => {
-      // 裁剪填充
       ctx.save();
-      roundRect(ctx, photoX + 2, photoY + 2, photoW - 4, photoH - 4, 6);
+      ctx.beginPath();
+      ctx.rect(photoX, photoY, photoW, photoH);
       ctx.clip();
-      const ratio = Math.max((photoW - 4) / img.width, (photoH - 4) / img.height);
+      const ratio = Math.max(photoW / img.width, photoH / img.height);
       const dw = img.width * ratio, dh = img.height * ratio;
-      ctx.drawImage(img, photoX + 2 - (dw - photoW + 4) / 2, photoY + 2 - (dh - photoH + 4) / 2, dw, dh);
+      ctx.drawImage(img, photoX - (dw - photoW) / 2, photoY - (dh - photoH) / 2, dw, dh);
       ctx.restore();
-      finishDraw();
+      finishFront();
     };
-    img.onerror = () => {
-      // 加载失败时画占位头像
-      ctx.fillStyle = '#c3cbdb';
-      ctx.font = 'bold 60px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(c.name.charAt(0), photoX + photoW / 2, photoY + photoH / 2);
-      finishDraw();
-    };
+    img.onerror = () => { drawPlaceholder(); finishFront(); };
     img.src = avatarSrc;
   } else {
-    // 占位头像
-    ctx.fillStyle = '#c3cbdb';
-    ctx.font = 'bold 60px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(c.name.charAt(0), photoX + photoW / 2, photoY + photoH / 2);
-    finishDraw();
+    drawPlaceholder();
+    finishFront();
   }
 
-  function finishDraw(){
+  function drawPlaceholder(){
+    ctx.fillStyle = '#c3cbdb';
+    ctx.font = 'bold 64px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText((c.name || '?').charAt(0), photoX + photoW / 2, photoY + photoH / 2);
+  }
+
+  function finishFront(){
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
+    const labelX = infoX;
+    const valX = infoX + 110;
+    let ry = infoY;
+    const fs = 20;
 
-    // 信息行
-    const labelX = photoX + photoW + 25;
-    const valX = labelX + 90;
-    let rowY = y;
+    drawRow(ctx, labelX, valX, ry, '姓　名', c.name || '', '#1a1a1a', fs);
+    ry += 42;
+    drawRow(ctx, labelX, valX, ry, '性　别', c.gender || '', '#1a1a1a', fs);
+    ry += 42;
+    drawRow(ctx, labelX, valX, ry, '身份证号', c.idCard || '', '#1a1a1a', fs - 1);
+    ry += 42;
 
-    drawRow(ctx, labelX, valX, rowY, '姓　名', c.name, '#151b26', 20);
-    rowY += 40;
-    drawRow(ctx, labelX, valX, rowY, '性　别', c.gender, '#151b26', 20);
-    rowY += 40;
-    drawRow(ctx, labelX, valX, rowY, '年　龄', c.age + ' 岁', '#151b26', 20);
-    rowY += 40;
-    drawRow(ctx, labelX, valX, rowY, '证件编号', c.certNo, '#151b26', 17);
+    // 健康体检单位（可能较长，自动换行）
+    ctx.fillStyle = '#888';
+    ctx.font = fs + 'px "SimSun","Songti SC","Microsoft YaHei",serif';
+    ctx.fillText('健康体检单位', labelX, ry);
+    ctx.fillStyle = '#1a1a1a';
+    ctx.font = 'bold ' + fs + 'px "SimSun","Songti SC","Microsoft YaHei",serif';
+    const org = c.checkOrg || c.workUnit || '';
+    // 限制宽度，超出换行
+    const maxW = photoX - valX - 10;
+    const lines = wrapText(ctx, org, maxW);
+    lines.forEach((ln, i) => ctx.fillText(ln, valX, ry + i * (fs + 6)));
+    ry += Math.max(42, lines.length * (fs + 6));
 
-    // 分隔线
-    y = photoY + photoH + 24;
-    ctx.strokeStyle = '#eef2f8';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([6, 4]);
-    ctx.beginPath();
-    ctx.moveTo(cardX + 30, y);
-    ctx.lineTo(cardX + cardW - 30, y);
+    // 体检日期（有效期一年）
+    ctx.fillStyle = '#888';
+    ctx.font = fs + 'px "SimSun","Songti SC","Microsoft YaHei",serif';
+    ctx.fillText('体检日期', labelX, ry);
+    ctx.fillStyle = '#1a1a1a';
+    ctx.font = 'bold ' + fs + 'px "SimSun","Songti SC","Microsoft YaHei",serif';
+    const dateText = (c.checkDate || '') + '（有效期一年）';
+    ctx.fillText(dateText, valX, ry);
+
+    drawBack();
+  }
+
+  // ========== 背面卡片 ==========
+  function drawBack(){
+    const bX = 60, bY = fY + fH + 40, bW = W - 120, bH = 300;
+    roundRect(ctx, bX, bY, bW, bH, 16);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.strokeStyle = '#b8b8b8';
+    ctx.lineWidth = 2;
     ctx.stroke();
-    ctx.setLineDash([]);
 
-    // 详细信息
-    y += 18;
-    const labelX2 = cardX + 30;
-    const valX2 = labelX2 + 110;
-    drawRow(ctx, labelX2, valX2, y, '从业类别', c.type, '#151b26', 18);
-    y += 38;
-    drawRow(ctx, labelX2, valX2, y, '体检结果', c.checkResult, '#12b76a', 18);
-    y += 38;
-    drawRow(ctx, labelX2, valX2, y, '有效期至', c.endTime, '#151b26', 18);
-    y += 38;
-    drawRow(ctx, labelX2, valX2, y, '发证机关', c.issueOrg, '#151b26', 17);
+    // 背面文字
+    ctx.fillStyle = '#1a1a1a';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'bold 34px "SimSun","Songti SC","Microsoft YaHei",serif';
+    ctx.fillText('广东省食品从业人员', W / 2, bY + bH / 2 - 30);
+    ctx.font = 'bold 34px "SimSun","Songti SC","Microsoft YaHei",serif';
+    ctx.fillText('健康证明', W / 2, bY + bH / 2 + 24);
 
-    // 底部：二维码 + 印章
-    const footY = H - cardY - 130;
     // 二维码
+    const qrSize = 150;
+    const qrX = (W - qrSize) / 2;
+    const qrY = bY + bH + 30;
+
     if (qrDataUrl){
       const qrImg = new Image();
       qrImg.onload = () => {
-        ctx.drawImage(qrImg, cardX + 30, footY, 110, 110);
-        ctx.fillStyle = '#8a93a5';
-        ctx.font = '11px "PingFang SC",sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('扫码核验', cardX + 85, footY + 122);
-        drawSealOnCanvas(cardX + cardW - 140, footY - 10, 140);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(qrX - 8, qrY - 8, qrSize + 16, qrSize + 16);
+        ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+        finalize();
       };
-      qrImg.onerror = () => drawSealOnCanvas(cardX + cardW - 140, footY - 10, 140);
+      qrImg.onerror = finalize;
       qrImg.src = qrDataUrl;
     } else {
-      drawSealOnCanvas(cardX + cardW - 140, footY - 10, 140);
-    }
-
-    function drawSealOnCanvas(x, y, size){
-      if (sealDataUrl){
-        const sealImg = new Image();
-        sealImg.onload = () => {
-          ctx.drawImage(sealImg, x, y, size, size);
-          finalize();
-        };
-        sealImg.onerror = finalize;
-        sealImg.src = sealDataUrl;
-      } else {
-        finalize();
-      }
+      finalize();
     }
   }
 
   function finalize(){
-    // 底部水印
-    ctx.fillStyle = 'rgba(138,147,165,0.5)';
-    ctx.font = '11px "PingFang SC",sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('本电子证照与纸质证照具有同等法律效力 · 核验地址：wsjkw.gd.gov.cn/hcert', W / 2, H - 20);
-
     // 导出图片
     try{
       const dataUrl = cv.toDataURL('image/png');
-      const fileName = '粤康证_' + c.name + '_' + c.certNo + '.png';
+      const fileName = '健康证明_' + (c.name || '') + '_' + (c.certNo || '') + '.png';
 
-      // 在弹窗中展示图片，用户可长按保存到相册
       $('#previewImg').src = dataUrl;
       const dl = $('#downloadLink');
       dl.href = dataUrl;
       dl.download = fileName;
       $('#imgModal').classList.add('show');
 
-      // 尝试自动下载（电脑浏览器有效）
       try{
         const a = document.createElement('a');
         a.href = dataUrl;
@@ -2737,11 +2638,29 @@ function saveCertImage(){
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-      }catch(e){ /* 移动端不支持自动下载，靠长按保存 */ }
+      }catch(e){}
     }catch(e){
       toast('图片生成失败，请截图保存');
     }
   }
+}
+
+/* 文本自动换行（按字符宽度） */
+function wrapText(ctx, text, maxWidth){
+  const chars = Array.from(text);
+  const lines = [];
+  let cur = '';
+  for (const ch of chars){
+    const test = cur + ch;
+    if (ctx.measureText(test).width > maxWidth && cur){
+      lines.push(cur);
+      cur = ch;
+    } else {
+      cur = test;
+    }
+  }
+  if (cur) lines.push(cur);
+  return lines;
 }
 
 function closeImgModal(){
