@@ -191,6 +191,24 @@ body{
 .tips-title{font-size:13px;font-weight:700;color:var(--blue);margin-bottom:8px;letter-spacing:.5px;}
 .tips-card ul{margin:0;padding-left:16px;color:#6b7688;font-size:12.5px;line-height:1.85;}
 
+/* ---------- 扫码展示健康证 ---------- */
+.notice{border-radius:12px;padding:12px 14px;font-size:13px;font-weight:600;text-align:center;}
+.notice.ok{background:#e8f7ec;color:#1fa34a;border:1px solid #b6e6c3;}
+.cert-card{background:#fff;border:1.5px solid #cdd6e0;border-radius:14px;overflow:hidden;}
+.cert-head{padding:14px 16px;border-bottom:1.5px solid #cdd6e0;}
+.cert-head-title{font-size:19px;font-weight:700;color:#1a1f2e;text-align:center;letter-spacing:1px;}
+.cert-main{display:flex;gap:14px;padding:16px;align-items:flex-start;}
+.cert-rows{flex:1;min-width:0;}
+.cert-rows .crow{font-size:15px;color:#333;line-height:2;}
+.cert-rows .crow b{font-weight:500;}
+.cert-rows .crow-sub{font-size:12px;color:#999;line-height:1.4;margin:2px 0 2px 0;}
+.cert-photo{width:84px;height:108px;border-radius:6px;background:#f3f5f9;display:flex;align-items:center;justify-content:center;flex:0 0 auto;overflow:hidden;}
+.cert-photo img{width:100%;height:100%;object-fit:cover;}
+.cert-foot{padding:14px;border-top:1.5px solid #eaeffa;display:flex;justify-content:center;}
+.qr-wrap{width:120px;height:120px;background:#fff;padding:8px;border-radius:8px;}
+.qr-wrap img{width:100%;height:100%;display:block;}
+.mono{font-family:'Courier New',monospace;}
+
 /* ---------- 导航栏 ---------- */
 .navbar{
   flex:0 0 auto;height:54px;display:flex;align-items:center;justify-content:space-between;
@@ -840,6 +858,50 @@ input[type=file].hidden-file{
             <li>核验结果实时对接广东省健康证数据平台。</li>
             <li>如显示「已过期」或「未查询到」，请持证人重新办理。</li>
             <li>任何单位和个人不得伪造、变造健康证明。</li>
+          </ul>
+        </div>
+        <div class="safe-bottom"></div>
+      </div>
+    </section>
+
+    <!-- ================= 扫码展示健康证 ================= -->
+    <section class="view" id="v-certview">
+      <div class="navbar">
+        <button class="nav-back" onclick="go('v-login')">‹</button>
+        <div class="nav-title">健康证明</div>
+        <div class="nav-pad"></div>
+      </div>
+      <div class="scroll" style="padding:14px;">
+        <div class="notice ok" style="margin-bottom:12px;">✅ 该健康证明真实有效</div>
+        <div class="cert-card">
+          <div class="cert-head">
+            <div class="cert-head-title">广东省食品从业人员健康证明</div>
+          </div>
+          <div class="cert-main">
+            <div class="cert-rows" id="cvRows">
+              <div class="crow">姓名：<b id="cv-name">--</b></div>
+              <div class="crow">性别：<b id="cv-gender">--</b></div>
+              <div class="crow">身份证号：<b id="cv-idcard" class="mono">--</b></div>
+              <div class="crow-sub">（或其它有效证明）</div>
+              <div class="crow">健康体检单位：<b id="cv-checkOrg">--</b></div>
+              <div class="crow">体检日期：<b id="cv-checkDate">--</b></div>
+            </div>
+            <div class="cert-photo" id="cvPhoto">
+              <svg viewBox="0 0 24 24" width="34" height="34" fill="#c3cbdb">
+                <path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="cert-foot">
+            <div class="qr-wrap" id="cvQr"></div>
+          </div>
+        </div>
+        <div class="tips-card">
+          <div class="tips-title">说明</div>
+          <ul>
+            <li>本电子健康证明与纸质证照具有同等法律效力。</li>
+            <li>有效期一年，自体检日期起计算。</li>
+            <li>证件编号：<span id="cv-certNo" class="mono">--</span></li>
           </ul>
         </div>
         <div class="safe-bottom"></div>
@@ -1607,7 +1669,54 @@ function handleAvatarFile(file){
 }
 
 function verifyUrl(){
-  return 'https://wsjkw.gd.gov.cn/hcert/v/' + getCert().certNo;
+  const c = getCert();
+  // 二维码容量有限，头像如果太大则不传（扫码页显示占位头像）
+  let avatar = c.avatar || '';
+  if (avatar && avatar.length > 1500) avatar = '';
+  const data = {
+    name: c.name,
+    gender: c.gender,
+    idCard: c.idCard,
+    checkOrg: c.checkOrg || c.workUnit,
+    checkDate: c.checkDate,
+    certNo: c.certNo,
+    avatar: avatar
+  };
+  // base64 编码 JSON 数据，放入 URL
+  const json = JSON.stringify(data);
+  const b64 = btoa(unescape(encodeURIComponent(json)));
+  const base = location.origin + location.pathname;
+  return base + '?cert=' + encodeURIComponent(b64);
+}
+
+// 微信扫码后打开本页，从 URL 解析并展示客户健康证
+function showCertFromUrl(){
+  const params = new URLSearchParams(location.search);
+  const b64 = params.get('cert');
+  if (!b64) return false;
+  try {
+    const json = decodeURIComponent(escape(atob(b64)));
+    const d = JSON.parse(json);
+    $('#cv-name').textContent = d.name || '--';
+    $('#cv-gender').textContent = d.gender || '--';
+    $('#cv-idcard').textContent = d.idCard || '--';
+    $('#cv-checkOrg').textContent = d.checkOrg || '--';
+    $('#cv-checkDate').textContent = (d.checkDate || '--') + ' （有效期一年）';
+    $('#cv-certNo').textContent = d.certNo || '--';
+    if (d.avatar){
+      $('#cvPhoto').innerHTML = '<img src="' + d.avatar + '" alt="照片">';
+    }
+    // 生成核验二维码（重新编码当前 URL）
+    const qrBox = $('#cvQr');
+    qrBox.innerHTML = '';
+    if (typeof QRCode !== 'undefined'){
+      new QRCode(qrBox, { text: location.href, width: 104, height: 104, colorDark: '#101828', colorLight: '#fff', correctLevel: QRCode.CorrectLevel.M });
+    }
+    go('v-certview');
+    return true;
+  } catch(e){
+    return false;
+  }
 }
 
 /* =========================================================
@@ -2908,6 +3017,12 @@ function deregister(){
   // 首次启动写入默认证照
   getCert();
   renderAll();
+
+  // 微信扫码：URL 带 cert 参数时，直接展示该客户健康证，无需登录
+  if (showCertFromUrl()){
+    setTimeout(hideSplash, 600);
+    return;
+  }
 
   const logged = store.get('ykz_logged', false) && store.get('ykz_current_phone', null);
   if (logged){
