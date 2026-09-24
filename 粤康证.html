@@ -817,7 +817,7 @@ input[type=file].hidden-file{
       <div class="hero small">
         <div class="hero-row">
           <div style="display:flex;align-items:center;gap:14px;">
-            <div class="hero-avatar big" id="meAvatar">张</div>
+            <div class="hero-avatar big" id="meAvatar">👤</div>
             <div>
               <div class="hero-title" id="meName">--</div>
               <div class="hero-sub" id="mePhone">--</div>
@@ -840,18 +840,14 @@ input[type=file].hidden-file{
         </div>
 
         <div class="list-card">
-          <div class="list-item"><span>身份证号</span><b class="mono" id="me-idcard">--</b></div>
-          <div class="list-item"><span>从业类别</span><b id="me-type">--</b></div>
-          <div class="list-item"><span>证件编号</span><b class="mono" id="me-no">--</b></div>
-          <div class="list-item"><span>发证机关</span><b id="me-org">--</b></div>
+          <div class="list-item link" onclick="go('v-subusers')"><span>👥 管理我的客户</span><b id="subuserCount">0 人 ›</b></div>
+          <div class="list-item link" onclick="if(requireVip('print'))go('v-print')"><span>打印健康证</span><b>›</b></div>
+          <div class="list-item link" onclick="if(requireVip('qr'))openQr()"><span>出示核验二维码</span><b>›</b></div>
         </div>
 
         <div class="list-card">
-          <div class="list-item link" onclick="go('v-subusers')"><span>👥 管理我的客户</span><b id="subuserCount">0 人 ›</b></div>
-          <div class="list-item link" onclick="if(requireVip('edit'))go('v-edit')"><span>填写资料 / 上传头像</span><b>›</b></div>
-          <div class="list-item link" onclick="if(requireVip('print'))go('v-print')"><span>打印健康证</span><b>›</b></div>
-          <div class="list-item link" onclick="if(requireVip('qr'))openQr()"><span>出示核验二维码</span><b>›</b></div>
-          <div class="list-item link" onclick="resetCert()"><span>重新生成证照数据</span><b>›</b></div>
+          <div class="list-item link" onclick="showChangePwd()"><span>🔑 修改密码</span><b>›</b></div>
+          <div class="list-item link" onclick="deregister()"><span>❌ 注销账号</span><b style="color:#e74c3c">›</b></div>
         </div>
 
         <button class="btn danger block" onclick="logout()">退出登录</button>
@@ -1182,6 +1178,29 @@ input[type=file].hidden-file{
     <div style="display:flex;gap:10px;">
       <a id="downloadLink" class="btn primary" style="flex:1;text-align:center;text-decoration:none;display:block;" download="粤康证.png">⬇️ 下载图片</a>
       <button class="btn ghost" style="flex:1;" onclick="closeImgModal()">关 闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 修改密码弹窗 -->
+<div class="modal" id="pwdModal" onclick="closePwdModal()">
+  <div class="modal-card" style="max-width:340px;text-align:left;" onclick="event.stopPropagation()">
+    <div class="modal-title">修改密码</div>
+    <div class="form-row" style="margin-bottom:10px;">
+      <div class="form-label">原密码</div>
+      <div class="form-control"><input class="form-input" id="pwd-old" type="password" maxlength="6" inputmode="numeric" placeholder="请输入原6位密码"></div>
+    </div>
+    <div class="form-row" style="margin-bottom:10px;">
+      <div class="form-label">新密码</div>
+      <div class="form-control"><input class="form-input" id="pwd-new" type="password" maxlength="6" inputmode="numeric" placeholder="请输入新6位密码"></div>
+    </div>
+    <div class="form-row" style="margin-bottom:14px;">
+      <div class="form-label">确认密码</div>
+      <div class="form-control"><input class="form-input" id="pwd-confirm" type="password" maxlength="6" inputmode="numeric" placeholder="再次输入新密码"></div>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn ghost" style="flex:1;" onclick="closePwdModal()">取 消</button>
+      <button class="btn primary" style="flex:1;" onclick="doChangePwd()">确认修改</button>
     </div>
   </div>
 </div>
@@ -2181,7 +2200,6 @@ function renderAll(){
     }
   };
   fillAvatar($('#heroAvatar'), c.name.charAt(0));
-  fillAvatar($('#meAvatar'), c.name.charAt(0));
   const certPhoto = $('#certPhoto');
   if (certPhoto){
     if (c.avatar){
@@ -2191,14 +2209,10 @@ function renderAll(){
     }
   }
 
-  $('#meName').textContent     = c.name;
-  $('#me-idcard').textContent  = c.idCard;
-  $('#me-type').textContent    = c.workType || '';
-  $('#me-no').textContent      = c.certNo;
-  $('#me-org').textContent     = c.issueOrg;
-
-  const phone = c.phone || store.get('ykz_phone', '13800138000');
-  $('#mePhone').textContent = phone.slice(0, 3) + '****' + phone.slice(-4);
+  // 我的页：只显示手机号
+  const phone = store.get('ykz_current_phone', '') || c.phone || store.get('ykz_phone', '');
+  $('#meName').textContent = '用户';
+  $('#mePhone').textContent = phone ? phone.slice(0, 3) + '****' + phone.slice(-4) : '--';
 
   // 打印页
   $('#ps-no').textContent     = c.certNo;
@@ -2721,6 +2735,52 @@ function logout(){
   clearCurrentUser();
   go('v-login');
   toast('已退出登录');
+}
+
+/* 修改密码 */
+function showChangePwd(){
+  $('#pwd-old').value = '';
+  $('#pwd-new').value = '';
+  $('#pwd-confirm').value = '';
+  $('#pwdModal').classList.add('show');
+}
+function closePwdModal(){
+  $('#pwdModal').classList.remove('show');
+}
+function doChangePwd(){
+  const oldPwd = $('#pwd-old').value.trim();
+  const newPwd = $('#pwd-new').value.trim();
+  const confirmPwd = $('#pwd-confirm').value.trim();
+  if (!/^\d{6}$/.test(oldPwd)){ toast('原密码需为6位数字'); return; }
+  if (!/^\d{6}$/.test(newPwd)){ toast('新密码需为6位数字'); return; }
+  if (newPwd !== confirmPwd){ toast('两次新密码不一致'); return; }
+  const phone = store.get('ykz_current_phone', null);
+  if (!phone){ toast('请先登录'); return; }
+  const users = getUsers();
+  if (!users[phone]){ toast('用户不存在'); return; }
+  if (users[phone].password !== oldPwd){ toast('原密码错误'); return; }
+  users[phone].password = newPwd;
+  saveUsers(users);
+  closePwdModal();
+  toast('密码修改成功');
+}
+
+/* 注销账号 */
+function deregister(){
+  if (!confirm('确定注销账号吗？所有数据将永久删除，无法恢复。')) return;
+  const phone = store.get('ykz_current_phone', null);
+  if (!phone){ toast('请先登录'); return; }
+  if (!confirm('再次确认：注销后您的账号、客户数据、会员资格将全部删除。')) return;
+  const users = getUsers();
+  delete users[phone];
+  saveUsers(users);
+  store.del('ykz_subusers_' + phone);
+  store.del('ykz_current_subuser_' + phone);
+  store.del(userKey(phone, 'cert'));
+  store.del(userKey(phone, 'vip'));
+  clearCurrentUser();
+  go('v-login');
+  toast('账号已注销');
 }
 
 /* =========================================================
