@@ -2590,9 +2590,42 @@ function saveCertImage(){
     ctx.fillText('（或其它有效证明）', x, ry);
     ry += smallFs + 8;
 
-    // 健康体检单位
+    // 健康体检单位（确保"门诊部"不被拆开）
     const org = c.checkOrg || c.workUnit || '';
-    drawField('健康体检单位：', org, '#1a1a1a', fs);
+    const orgLabel = '健康体检单位：';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#333';
+    ctx.font = fs + 'px "SimSun","Songti SC","Microsoft YaHei",serif';
+    ctx.fillText(orgLabel, x, ry);
+    const orgLabelW = ctx.measureText(orgLabel).width;
+    ctx.fillStyle = '#1a1a1a';
+    ctx.font = fs + 'px "SimSun","Songti SC","Microsoft YaHei",serif';
+    let orgLines;
+    if (org.indexOf('门诊部') >= 0){
+      const head = org.split('门诊部')[0];
+      const headLines = wrapText(ctx, head, textMaxW - orgLabelW);
+      orgLines = headLines.slice(0, -1);
+      const lastHead = headLines[headLines.length - 1] || '';
+      if (ctx.measureText(lastHead + '门诊部').width <= textMaxW - orgLabelW){
+        orgLines.push(lastHead + '门诊部');
+      } else {
+        orgLines.push(lastHead);
+        orgLines.push('门诊部');
+      }
+    } else {
+      orgLines = wrapText(ctx, org, textMaxW - orgLabelW);
+    }
+    for (let i = 0; i < orgLines.length; i++){
+      if (i === 0){
+        ctx.textAlign = 'left';
+        ctx.fillText(orgLines[i], x + orgLabelW, ry);
+      } else {
+        ctx.textAlign = 'center';
+        ctx.fillText(orgLines[i], x + textMaxW / 2, ry + i * lineH);
+      }
+    }
+    ctx.textAlign = 'left';
+    ry += Math.max(lineH, orgLines.length * lineH);
 
     // 体检日期（有效期一年）
     const dateText = (c.checkDate || '') + ' （有效期一年）';
