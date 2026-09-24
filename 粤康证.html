@@ -819,7 +819,7 @@ input[type=file].hidden-file{
           <div style="display:flex;align-items:center;gap:14px;">
             <div class="hero-avatar big" id="meAvatar">👤</div>
             <div>
-              <div class="hero-title" id="meName">--</div>
+              <div class="hero-title" id="meName">用户</div>
               <div class="hero-sub" id="mePhone">--</div>
             </div>
           </div>
@@ -839,14 +839,31 @@ input[type=file].hidden-file{
           </div>
         </div>
 
+        <!-- 账号信息 -->
         <div class="list-card">
-          <div class="list-item link" onclick="go('v-subusers')"><span>👥 管理我的客户</span><b id="subuserCount">0 人 ›</b></div>
-          <div class="list-item link" onclick="if(requireVip('print'))go('v-print')"><span>打印健康证</span><b>›</b></div>
+          <div class="list-item"><span>手机号码</span><b class="mono" id="me-phone2">--</b></div>
+          <div class="list-item"><span>注册时间</span><b id="me-regTime">--</b></div>
+          <div class="list-item"><span>会员状态</span><b id="me-vipStatus">注册用户</b></div>
+          <div class="list-item"><span>会员到期</span><b id="me-vipExpire">--</b></div>
+          <div class="list-item"><span>客户数量</span><b id="me-subCount">0 人</b></div>
         </div>
 
+        <!-- 功能入口 -->
+        <div class="list-card">
+          <div class="list-item link" onclick="go('v-subusers')"><span>👥 管理我的客户</span><b id="subuserCount">0 人 ›</b></div>
+        </div>
+
+        <!-- 账号操作 -->
         <div class="list-card">
           <div class="list-item link" onclick="showChangePwd()"><span>🔑 修改密码</span><b>›</b></div>
           <div class="list-item link" onclick="deregister()"><span>❌ 注销账号</span><b style="color:#e74c3c">›</b></div>
+        </div>
+
+        <!-- 导航工具栏 -->
+        <div style="display:flex;gap:8px;margin:14px 0;">
+          <button class="btn ghost" style="flex:1;" onclick="goBack()">‹ 返回</button>
+          <button class="btn ghost" style="flex:1;" onclick="go('v-home')">🏠 首页</button>
+          <button class="btn ghost" style="flex:1;" onclick="go('v-verify')">📋 核验</button>
         </div>
 
         <button class="btn danger block" onclick="logout()">退出登录</button>
@@ -2221,10 +2238,28 @@ function renderAll(){
     }
   }
 
-  // 我的页：只显示手机号
+  // 我的页：显示账号信息
   const phone = store.get('ykz_current_phone', '') || c.phone || store.get('ykz_phone', '');
+  const mePhone2 = $('#me-phone2');
+  if (mePhone2) mePhone2.textContent = phone ? phone : '--';
   $('#meName').textContent = '用户';
   $('#mePhone').textContent = phone ? phone.slice(0, 3) + '****' + phone.slice(-4) : '--';
+
+  // 账号信息
+  const users = getUsers();
+  const curUser = users[phone];
+  const regTimeEl = $('#me-regTime');
+  if (regTimeEl) regTimeEl.textContent = curUser && curUser.registeredAt ? fmtDateTime(new Date(curUser.registeredAt)) : '--';
+
+  const vipActive = isCurrentUserVip();
+  const vipData = getUserVip(phone);
+  const vipStatusEl = $('#me-vipStatus');
+  if (vipStatusEl) vipStatusEl.textContent = vipActive ? '会员' : '注册用户';
+  const vipExpireEl = $('#me-vipExpire');
+  if (vipExpireEl) vipExpireEl.textContent = vipActive ? fmtExpire(vipData.expire) : '--';
+
+  const subCountEl = $('#me-subCount');
+  if (subCountEl) subCountEl.textContent = getSubusers().length + ' 人';
 
   // 打印页
   $('#ps-no').textContent     = c.certNo;
@@ -2286,6 +2321,7 @@ const VIEW_STACK = ['v-login', 'v-home', 'v-verify', 'v-me', 'v-subusers', 'v-ed
 function go(id, opts){
   opts = opts || {};
   if (id === currentView) return;
+  viewHistory.push(id);
 
   // 判断动画方向：向前（右进左出） vs 向后（左进右出）
   let dir = opts.dir;
@@ -2325,6 +2361,18 @@ function go(id, opts){
     setTimeout(fillEditForm, 30);
   }
   window.scrollTo(0, 0);
+}
+
+/* 返回上一页 */
+let viewHistory = [];
+function goBack(){
+  if (viewHistory.length > 1){
+    viewHistory.pop();
+    const prev = viewHistory[viewHistory.length - 1];
+    go(prev, {dir:'back'});
+  } else {
+    go('v-home', {dir:'back'});
+  }
 }
 
 /* 隐藏启动闪屏 */
