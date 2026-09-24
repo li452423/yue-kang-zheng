@@ -251,7 +251,7 @@ body{
 .ps-photo img{width:100%;height:100%;object-fit:cover;display:block;}
 .ps-card.back{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  min-height:200px;gap:14px;
+  min-height:300px;gap:14px;
 }
 .ps-back-title{
   font-size:24px;font-weight:700;letter-spacing:3px;color:#1a1a1a;
@@ -2582,7 +2582,8 @@ function saveCertImage(){
 
   // ========== 背面卡片 ==========
   function drawBack(){
-    const bX = 60, bY = fY + fH + 40, bW = W - 120, bH = 300;
+    // 背面与正面同尺寸、同边框
+    const bX = fX, bY = fY + fH + 40, bW = fW, bH = fH;
     roundRect(ctx, bX, bY, bW, bH, 16);
     ctx.fillStyle = '#ffffff';
     ctx.fill();
@@ -2590,7 +2591,7 @@ function saveCertImage(){
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // 背面文字
+    // 背面文字（居中）
     ctx.fillStyle = '#1a1a1a';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
