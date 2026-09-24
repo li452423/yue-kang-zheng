@@ -864,17 +864,12 @@ input[type=file].hidden-file{
         <div class="nav-pad"></div>
       </div>
       <div class="scroll" style="padding:0 14px;">
-        <div class="notice ok" style="margin-top:14px;">
-          <b>👥 客户管理</b><br>
-          可添加客户信息，每个客户拥有独立的健康证资料，可随时切换管理。
+        <div class="list-card" id="subuserList" style="margin-top:14px;">
+          <div style="padding:30px 16px;text-align:center;color:var(--muted);font-size:13px;">暂无客户，点击下方按钮添加</div>
         </div>
 
         <div class="actions" style="margin:14px 0;">
-          <button class="btn primary block" onclick="showAddSubuser()">➕ 添加新客户</button>
-        </div>
-
-        <div class="list-card" id="subuserList" style="margin-top:0;">
-          <div style="padding:30px 16px;text-align:center;color:var(--muted);font-size:13px;">暂无客户，点击上方按钮添加</div>
+          <button class="btn primary block" onclick="quickAddSubuser()">➕ 添加新客户</button>
         </div>
 
         <div class="safe-bottom"></div>
@@ -1597,6 +1592,30 @@ function closeSubuserModal(){
   $('#subuserModal').classList.remove('show');
 }
 
+/* 快速添加客户：直接创建并进入编辑页 */
+function quickAddSubuser(){
+  const list = getSubusers();
+  const sub = {
+    id: 'sub_' + Date.now(),
+    name: '新客户',
+    gender: '男',
+    phone: '',
+    relation: '美团配送员',
+    cert: buildDefaultCert(),
+    createdAt: Date.now()
+  };
+  sub.cert.name = '新客户';
+  sub.cert.gender = '男';
+  list.push(sub);
+  saveSubusers(list);
+  setCurrentSubuserId(sub.id);
+  renderSubuserList();
+  renderAll();
+  initSealAndQr();
+  toast('已添加新客户，请填写资料');
+  go('v-edit');
+}
+
 function addSubuser(){
   const name = $('#su-name').value.trim();
   const phone = $('#su-phone').value.trim();
@@ -1691,20 +1710,14 @@ function renderSubuserList(){
         statusBadge = '<span style="font-size:11px;color:#27ae60;background:#e8f8f0;border-radius:4px;padding:1px 6px;margin-left:4px;">有效</span>';
       }
     }
-    html += '<div class="list-item" style="flex-direction:column;align-items:stretch;gap:8px;">' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">' +
-        '<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">' +
-          '<div style="width:36px;height:36px;border-radius:50%;background:' + (isCur ? 'var(--blue)' : '#e9edf4') + ';color:' + (isCur ? '#fff' : 'var(--muted)') + ';display:flex;align-items:center;justify-content:center;font-weight:700;flex:0 0 auto;overflow:hidden;">' + (c.avatar ? '<img src="' + c.avatar + '" style="width:100%;height:100%;object-fit:cover;">' : s.name.charAt(0)) + '</div>' +
-          '<div style="flex:1;min-width:0;">' +
-            '<div style="font-size:14px;font-weight:600;">' + s.name + (isCur ? ' <span style="color:var(--blue);font-size:11px;">· 当前</span>' : '') + statusBadge + '</div>' +
-            '<div style="font-size:11.5px;color:var(--muted);">' + s.relation + (s.phone ? ' · ' + s.phone.slice(0,3) + '****' + s.phone.slice(-4) : '') + (c.workType ? ' · ' + c.workType : '') + '</div>' +
-          '</div>' +
+    html += '<div class="list-item link" style="flex-direction:column;align-items:stretch;gap:8px;" onclick="editSubuser(\'' + s.id + '\')">' +
+      '<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">' +
+        '<div style="width:36px;height:36px;border-radius:50%;background:' + (isCur ? 'var(--blue)' : '#e9edf4') + ';color:' + (isCur ? '#fff' : 'var(--muted)') + ';display:flex;align-items:center;justify-content:center;font-weight:700;flex:0 0 auto;overflow:hidden;">' + (c.avatar ? '<img src="' + c.avatar + '" style="width:100%;height:100%;object-fit:cover;">' : s.name.charAt(0)) + '</div>' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="font-size:14px;font-weight:600;">' + s.name + (isCur ? ' <span style="color:var(--blue);font-size:11px;">· 当前</span>' : '') + statusBadge + '</div>' +
+          '<div style="font-size:11.5px;color:var(--muted);">' + s.relation + (s.phone ? ' · ' + s.phone.slice(0,3) + '****' + s.phone.slice(-4) : '') + '</div>' +
         '</div>' +
-      '</div>' +
-      '<div style="display:flex;gap:8px;">' +
-        (isCur ? '<button class="btn ghost" style="flex:1;padding:8px;font-size:13px;background:#e8f0ff;color:var(--blue);border-color:#cfe0ff;" disabled>✓ 当前</button>' : '<button class="btn primary" style="flex:1;padding:8px;font-size:13px;" onclick="switchSubuser(\'' + s.id + '\')">切换管理</button>') +
-        '<button class="btn ghost" style="flex:0 0 auto;padding:8px 12px;font-size:13px;" onclick="editSubuser(\'' + s.id + '\')">✏️ 客户编辑/修改</button>' +
-        '<button class="btn danger" style="flex:0 0 auto;padding:8px 14px;font-size:13px;" onclick="deleteSubuser(\'' + s.id + '\')">删除</button>' +
+        '<span style="color:var(--muted);font-size:18px;">›</span>' +
       '</div>' +
     '</div>';
   });
