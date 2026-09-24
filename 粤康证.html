@@ -639,10 +639,14 @@ input[type=file].hidden-file{
       <div class="hero">
         <div class="hero-row">
           <div>
-            <div class="hero-title">我的健康证</div>
-            <div class="hero-sub">电子证照 · 与纸质版同等效力</div>
+            <div class="hero-title" id="heroTitle">我的健康证</div>
+            <div class="hero-sub" id="heroSub">电子证照 · 与纸质版同等效力</div>
           </div>
           <div class="hero-avatar" id="heroAvatar">张</div>
+        </div>
+        <div id="subuserBadge" style="display:none;margin-top:10px;background:rgba(255,255,255,.2);border-radius:8px;padding:8px 12px;font-size:12.5px;color:#fff;display:none;align-items:center;justify-content:space-between;gap:8px;">
+          <span id="subuserBadgeText">👤 正在管理：--</span>
+          <span style="background:rgba(255,255,255,.25);border-radius:6px;padding:3px 10px;font-size:11px;white-space:nowrap;" onclick="go('v-subusers')">切换 ›</span>
         </div>
       </div>
 
@@ -1619,6 +1623,16 @@ function switchSubuser(id){
   go('v-home');
 }
 
+function editSubuser(id){
+  setCurrentSubuserId(id);
+  renderSubuserList();
+  renderAll();
+  initSealAndQr();
+  const sub = getCurrentSubuser();
+  toast('已切换到：' + (sub ? sub.name : ''));
+  go('v-edit');
+}
+
 function deleteSubuser(id){
   if (!confirm('确定删除该子用户吗？其证照数据将一并删除。')) return;
   let list = getSubusers();
@@ -1648,18 +1662,33 @@ function renderSubuserList(){
   let html = '';
   list.forEach(s => {
     const isCur = (s.id === curId);
+    const c = s.cert || {};
+    // 证照状态
+    let statusBadge = '';
+    if (c.endTime){
+      const end = new Date(c.endTime + 'T23:59:59');
+      const days = Math.ceil((end - new Date()) / 86400000);
+      if (days <= 0){
+        statusBadge = '<span style="font-size:11px;color:#e74c3c;background:#fde8e8;border-radius:4px;padding:1px 6px;margin-left:4px;">已过期</span>';
+      } else if (days <= 30){
+        statusBadge = '<span style="font-size:11px;color:#e67e22;background:#fdf3e8;border-radius:4px;padding:1px 6px;margin-left:4px;">' + days + '天后到期</span>';
+      } else {
+        statusBadge = '<span style="font-size:11px;color:#27ae60;background:#e8f8f0;border-radius:4px;padding:1px 6px;margin-left:4px;">有效</span>';
+      }
+    }
     html += '<div class="list-item" style="flex-direction:column;align-items:stretch;gap:8px;">' +
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">' +
         '<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">' +
-          '<div style="width:36px;height:36px;border-radius:50%;background:' + (isCur ? 'var(--blue)' : '#e9edf4') + ';color:' + (isCur ? '#fff' : 'var(--muted)') + ';display:flex;align-items:center;justify-content:center;font-weight:700;flex:0 0 auto;">' + s.name.charAt(0) + '</div>' +
+          '<div style="width:36px;height:36px;border-radius:50%;background:' + (isCur ? 'var(--blue)' : '#e9edf4') + ';color:' + (isCur ? '#fff' : 'var(--muted)') + ';display:flex;align-items:center;justify-content:center;font-weight:700;flex:0 0 auto;overflow:hidden;">' + (c.avatar ? '<img src="' + c.avatar + '" style="width:100%;height:100%;object-fit:cover;">' : s.name.charAt(0)) + '</div>' +
           '<div style="flex:1;min-width:0;">' +
-            '<div style="font-size:14px;font-weight:600;">' + s.name + (isCur ? ' <span style="color:var(--blue);font-size:11px;">· 当前</span>' : '') + '</div>' +
-            '<div style="font-size:11.5px;color:var(--muted);">' + s.relation + (s.phone ? ' · ' + s.phone.slice(0,3) + '****' + s.phone.slice(-4) : '') + '</div>' +
+            '<div style="font-size:14px;font-weight:600;">' + s.name + (isCur ? ' <span style="color:var(--blue);font-size:11px;">· 当前</span>' : '') + statusBadge + '</div>' +
+            '<div style="font-size:11.5px;color:var(--muted);">' + s.relation + (s.phone ? ' · ' + s.phone.slice(0,3) + '****' + s.phone.slice(-4) : '') + (c.workType ? ' · ' + c.workType : '') + '</div>' +
           '</div>' +
         '</div>' +
       '</div>' +
       '<div style="display:flex;gap:8px;">' +
         (isCur ? '<button class="btn ghost" style="flex:1;padding:8px;font-size:13px;background:#e8f0ff;color:var(--blue);border-color:#cfe0ff;" disabled>✓ 当前管理中</button>' : '<button class="btn primary" style="flex:1;padding:8px;font-size:13px;" onclick="switchSubuser(\'' + s.id + '\')">切换管理</button>') +
+        '<button class="btn ghost" style="flex:0 0 auto;padding:8px 12px;font-size:13px;" onclick="editSubuser(\'' + s.id + '\')">✏️ 编辑</button>' +
         '<button class="btn danger" style="flex:0 0 auto;padding:8px 14px;font-size:13px;" onclick="deleteSubuser(\'' + s.id + '\')">删除</button>' +
       '</div>' +
     '</div>';
@@ -2135,6 +2164,17 @@ function renderAll(){
   // 子用户数量
   const countEl = $('#subuserCount');
   if (countEl) countEl.textContent = getSubusers().length + ' 人 ›';
+
+  // 首页子用户标识
+  const badge = $('#subuserBadge');
+  const badgeText = $('#subuserBadgeText');
+  const curSub = getCurrentSubuser();
+  if (curSub){
+    if (badge) badge.style.display = 'flex';
+    if (badgeText) badgeText.textContent = '👤 正在管理：' + curSub.name + '（' + curSub.relation + '）';
+  } else {
+    if (badge) badge.style.display = 'none';
+  }
 
   // 首页
   $('#c-name').textContent   = c.name;
