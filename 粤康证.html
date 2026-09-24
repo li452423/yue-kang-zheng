@@ -1212,12 +1212,12 @@ input[type=file].hidden-file{
       <div class="form-control"><input class="form-input mono" id="su-phone" type="tel" maxlength="11" placeholder="11位手机号（选填）"></div>
     </div>
     <div class="form-row" style="margin-bottom:14px;">
-      <div class="form-label">关　系</div>
+      <div class="form-label">职　位</div>
       <div class="form-control">
         <select class="form-select" id="su-relation">
-          <option value="本人">本人</option>
-          <option value="家人">家人</option>
-          <option value="员工">员工</option>
+          <option value="美团配送员">美团配送员</option>
+          <option value="厨师">厨师</option>
+          <option value="餐饮店员">餐饮店员</option>
           <option value="其他">其他</option>
         </select>
       </div>
@@ -1575,7 +1575,7 @@ function showAddSubuser(){
   $('#su-name').value = '';
   $('#su-phone').value = '';
   $('#su-gender').value = '男';
-  $('#su-relation').value = '家人';
+  $('#su-relation').value = '美团配送员';
   $('#subuserModal').classList.add('show');
 }
 function closeSubuserModal(){
