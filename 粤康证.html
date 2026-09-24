@@ -2483,27 +2483,27 @@ function saveCertImage(){
   ctx.fillRect(0, 0, W, H);
 
   // ========== 正面卡片（横向长方形，居中） ==========
-  const fW = 580, fH = 370;
+  const fW = 600, fH = 360;
   const fX = (W - fW) / 2, fY = 50;
-  roundRect(ctx, fX, fY, fW, fH, 16);
+  roundRect(ctx, fX, fY, fW, fH, 14);
   ctx.fillStyle = '#ffffff';
   ctx.fill();
-  ctx.strokeStyle = '#b8b8b8';
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = '#999';
+  ctx.lineWidth = 1.5;
   ctx.stroke();
 
   // 正面标题
   ctx.fillStyle = '#1a1a1a';
-  ctx.font = 'bold 30px "SimSun","Songti SC","Microsoft YaHei",serif';
+  ctx.font = 'bold 28px "SimSun","Songti SC","Microsoft YaHei",serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  ctx.fillText('广东省食品从业人员健康证明', W / 2, fY + 28);
+  ctx.fillText('广东省食品从业人员健康证明', W / 2, fY + 24);
 
   // 正面信息区（左文右图）
-  const infoX = fX + 40;
-  const infoY = fY + 85;
-  const photoW = 110, photoH = 145;
-  const photoX = fX + fW - photoW - 40;
+  const infoX = fX + 38;
+  const infoY = fY + 78;
+  const photoW = 105, photoH = 140;
+  const photoX = fX + fW - photoW - 38;
   const photoY = infoY;
 
   // 照片框
@@ -2544,29 +2544,38 @@ function saveCertImage(){
   }
 
   function finishFront(){
-    ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     const x = infoX;
     let ry = infoY;
-    const fs = 22;
-    const smallFs = 15;
-    const lineH = 34;
-    // 文本最大宽度（不超过照片左边界）
+    const fs = 20;
+    const smallFs = 14;
+    const lineH = 30;
+    // 文本区域宽度（从 infoX 到照片左侧）
     const textMaxW = photoX - x - 12;
 
-    // 辅助：画"标签：值"，值自动换行（换行后从标签位置开始）
+    // 辅助：画"标签：值"，第一行紧跟标签，后续行居中对齐
     function drawField(label, value, color, vFs){
+      const vf = vFs || fs;
+      ctx.textAlign = 'left';
       ctx.fillStyle = '#333';
       ctx.font = fs + 'px "SimSun","Songti SC","Microsoft YaHei",serif';
       ctx.fillText(label, x, ry);
       const labelW = ctx.measureText(label).width;
       const valX = x + labelW;
       ctx.fillStyle = color || '#1a1a1a';
-      ctx.font = (vFs || fs) + 'px "SimSun","Songti SC","Microsoft YaHei",serif';
+      ctx.font = vf + 'px "SimSun","Songti SC","Microsoft YaHei",serif';
       const lines = wrapText(ctx, value, textMaxW - labelW);
-      lines.forEach((ln, i) => {
-        ctx.fillText(ln, i === 0 ? valX : x, ry + i * lineH);
-      });
+      // 第一行左对齐紧跟标签，后续行在文本区域内居中
+      for (let i = 0; i < lines.length; i++){
+        if (i === 0){
+          ctx.textAlign = 'left';
+          ctx.fillText(lines[i], valX, ry);
+        } else {
+          ctx.textAlign = 'center';
+          ctx.fillText(lines[i], x + textMaxW / 2, ry + i * lineH);
+        }
+      }
+      ctx.textAlign = 'left';
       ry += Math.max(lineH, lines.length * lineH);
     }
 
@@ -2575,10 +2584,11 @@ function saveCertImage(){
     drawField('身份证号：', c.idCard || '', '#1a1a1a', fs);
 
     // （或其它有效证明）小字体提示
+    ctx.textAlign = 'left';
     ctx.fillStyle = '#888';
     ctx.font = smallFs + 'px "SimSun","Songti SC","Microsoft YaHei",serif';
     ctx.fillText('（或其它有效证明）', x, ry);
-    ry += smallFs + 10;
+    ry += smallFs + 8;
 
     // 健康体检单位
     const org = c.checkOrg || c.workUnit || '';
