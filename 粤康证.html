@@ -483,15 +483,9 @@ body{
   font-size:10px;color:#8a93a5;background:rgba(255,255,255,.85);padding:3px 0;
 }
 
-/* 隐藏文件输入：用裁剪而非离屏定位，确保移动端 WebView 中程序式 .click() 不被拦截 */
+/* 隐藏文件输入：用 display:none 最兼容移动端 */
 input[type=file].hidden-file{
-  position:fixed;
-  left:0;top:0;
-  width:100%;height:100%;
-  opacity:0;
-  pointer-events:none;
-  z-index:-1;
-  -webkit-appearance:none;
+  display:none;
 }
 
 /* 体检项目 chip */
@@ -1261,11 +1255,11 @@ input[type=file].hidden-file{
 <input type="file" id="fileCam" class="hidden-file" accept="image/*" capture="user">
 <input type="file" id="fileAlbum" class="hidden-file" accept="image/*">
 
-<!-- 选择来源底部弹窗：用 label[for] 原生关联 file input，最稳定 -->
+<!-- 选择来源底部弹窗 -->
 <div class="capture-mask" id="captureMask" onclick="closeCapture()"></div>
 <div class="capture-sheet" id="captureSheet">
-  <label for="fileCam" class="capture-item cam">📷 拍照上传</label>
-  <label for="fileAlbum" class="capture-item album">🖼 从相册选择</label>
+  <div class="capture-item cam" onclick="pickImage('fileCam')">📷 拍照上传</div>
+  <div class="capture-item album" onclick="pickImage('fileAlbum')">🖼 从相册选择</div>
   <div class="capture-item cancel" onclick="closeCapture()">取 消</div>
 </div>
 
@@ -1514,7 +1508,7 @@ function pickImage(id){
     toast('当前环境不支持文件选择：' + e.message);
     return;
   }
-  closeCapture();           // 触发后再关弹窗
+  // 不在这里关闭弹窗，等文件选择完成后再关闭
 }
 
 function handleAvatarFile(file){
@@ -1562,6 +1556,9 @@ document.getElementById('fileAlbum').addEventListener('change', e => {
   e.target.value = '';
   closeCapture();
 });
+// 用户取消选择时关闭弹窗
+document.getElementById('fileCam').addEventListener('blur', () => { closeCapture(); });
+document.getElementById('fileAlbum').addEventListener('blur', () => { closeCapture(); });
 function verifyUrl(){
   return 'https://wsjkw.gd.gov.cn/hcert/v/' + getCert().certNo;
 }
