@@ -1695,8 +1695,8 @@ function verifyUrl(){
     a: av
   };
   let json = JSON.stringify(data);
-  // QR码L级最大2953字节，扣URL前缀+base64膨胀+URI编码，JSON安全上限约1600字节
-  if (json.length > 1600){
+  // JSON安全上限1500字节（ensureTinyAvatar已保证头像在预算内，这里是兜底）
+  if (json.length > 1500){
     data.a = '';
     json = JSON.stringify(data);
   }
@@ -2281,18 +2281,49 @@ function buildSeal(){
    ========================================================= */
 let qrDataUrl = '';
 
+// 计算无头像时 JSON 的字节长度，反推头像可用空间
+function getAvatarBudget(c){
+  const base = {
+    n: c.name, g: c.gender, i: c.idCard,
+    o: c.checkOrg || c.workUnit, d: c.checkDate,
+    c: c.certNo, a: ''
+  };
+  // QR L级最大2953字节，扣URL前缀(~50)+base64膨胀(4/3)+URI编码(~1.3)
+  const MAX_JSON = 1500;
+  const baseLen = JSON.stringify(base).length;
+  return Math.max(0, MAX_JSON - baseLen); // 头像去前缀后的最大base64长度
+}
+
 // 确保当前证照有极小缩略图（用于二维码），没有则现场生成
 function ensureTinyAvatar(c){
   return new Promise(resolve => {
-    // 已有缩略图且不超过 1400 字节（含前缀），直接用
-    if (c.avatarTiny && c.avatarTiny.length < 1400){ resolve(); return; }
+    const budget = getAvatarBudget(c);
+    if (budget <= 0){ resolve(); return; }
+    // 已有缩略图且在预算内，直接用
+    if (c.avatarTiny){
+      const m = c.avatarTiny.match(/^data:image\/\w+;base64,(.+)$/);
+      if (m && m[1].length <= budget){ resolve(); return; }
+    }
     if (!c.avatar){ resolve(); return; }
     const img = new Image();
     img.onload = () => {
+      // 逐级尝试：尺寸从大到小、质量从高到低，找到第一个不超预算的
+      const attempts = [
+        [50, 65, 0.4], [50, 65, 0.3], [44, 57, 0.3],
+        [38, 50, 0.3], [32, 42, 0.25], [28, 36, 0.2]
+      ];
       const tcv = document.createElement('canvas');
-      tcv.width = 50; tcv.height = 65;
-      tcv.getContext('2d').drawImage(img, 0, 0, 50, 65);
-      c.avatarTiny = tcv.toDataURL('image/jpeg', 0.35);
+      const ctx = tcv.getContext('2d');
+      let picked = '';
+      for (const [w, h, q] of attempts){
+        tcv.width = w; tcv.height = h;
+        ctx.drawImage(img, 0, 0, w, h);
+        const dataUrl = tcv.toDataURL('image/jpeg', q);
+        const m = dataUrl.match(/^data:image\/\w+;base64,(.+)$/);
+        if (m && m[1].length <= budget){ picked = dataUrl; break; }
+        picked = dataUrl; // 兜底用最小的
+      }
+      c.avatarTiny = picked;
       saveCert(c);
       resolve();
     };
