@@ -2371,11 +2371,11 @@ function buildQrNow(){
       try{
         new QRCode(tmp, {
           text: text,
-          width: 480,
-          height: 480,
-          colorDark: '#101828',
+          width: 512,
+          height: 512,
+          colorDark: '#000000',
           colorLight: '#ffffff',
-          correctLevel: QRCode.CorrectLevel.L
+          correctLevel: QRCode.CorrectLevel.M
         });
         setTimeout(() => {
           const cv = tmp.querySelector('canvas');
@@ -2863,8 +2863,8 @@ function saveCertImage(){
     ctx.font = 'bold 34px "SimSun","Songti SC","Microsoft YaHei",serif';
     ctx.fillText('健康证明', W / 2, bY + bH / 2 + 24);
 
-    // 二维码（密集码需更大尺寸才能扫）
-    const qrSize = 220;
+    // 二维码（加大尺寸+宽白边，便于微信识别）
+    const qrSize = 340;
     const qrX = (W - qrSize) / 2;
     const qrY = bY + bH + 30;
 
@@ -2873,7 +2873,7 @@ function saveCertImage(){
         const qrImg = new Image();
         qrImg.onload = () => {
           ctx.fillStyle = '#ffffff';
-          ctx.fillRect(qrX - 8, qrY - 8, qrSize + 16, qrSize + 16);
+          ctx.fillRect(qrX - 20, qrY - 20, qrSize + 40, qrSize + 40);
           ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
           finalize();
         };
