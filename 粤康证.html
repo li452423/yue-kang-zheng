@@ -2268,54 +2268,79 @@ function buildSeal(){
    ========================================================= */
 let qrDataUrl = '';
 
-function buildQr(){
-  const text = verifyUrl();
-  const tmp = document.createElement('div');
-  tmp.style.cssText = 'position:fixed;left:-9999px;top:0;';
-  document.body.appendChild(tmp);
+// 确保当前证照有极小缩略图（用于二维码），没有则现场生成
+function ensureTinyAvatar(c){
+  return new Promise(resolve => {
+    if (c.avatarTiny || !c.avatar){ resolve(); return; }
+    const img = new Image();
+    img.onload = () => {
+      const tcv = document.createElement('canvas');
+      tcv.width = 50; tcv.height = 65;
+      tcv.getContext('2d').drawImage(img, 0, 0, 50, 65);
+      c.avatarTiny = tcv.toDataURL('image/jpeg', 0.45);
+      saveCert(c);
+      resolve();
+    };
+    img.onerror = () => resolve();
+    img.src = c.avatar;
+  });
+}
 
-  if (typeof QRCode !== 'undefined'){
-    try{
-      new QRCode(tmp, {
-        text: text,
-        width: 360,
-        height: 360,
-        colorDark: '#101828',
-        colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.M
-      });
-      setTimeout(() => {
-        const cv = tmp.querySelector('canvas');
-        if (cv){
-          qrDataUrl = cv.toDataURL('image/png');
-          // 首页缩略二维码：直接搬走这个 canvas
-          const home = $('#homeQr');
-          if (home){
-            home.innerHTML = '';
-            cv.style.width = '100%';
-            cv.style.height = '100%';
-            cv.style.display = 'block';
-            home.appendChild(cv);
+function buildQr(){
+  const c = getCert();
+  return ensureTinyAvatar(c).then(() => buildQrNow());
+}
+
+function buildQrNow(){
+  return new Promise(resolve => {
+    const text = verifyUrl();
+    const tmp = document.createElement('div');
+    tmp.style.cssText = 'position:fixed;left:-9999px;top:0;';
+    document.body.appendChild(tmp);
+
+    if (typeof QRCode !== 'undefined'){
+      try{
+        new QRCode(tmp, {
+          text: text,
+          width: 360,
+          height: 360,
+          colorDark: '#101828',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+        setTimeout(() => {
+          const cv = tmp.querySelector('canvas');
+          if (cv){
+            qrDataUrl = cv.toDataURL('image/png');
+            const home = $('#homeQr');
+            if (home){
+              home.innerHTML = '';
+              cv.style.width = '100%';
+              cv.style.height = '100%';
+              cv.style.display = 'block';
+              home.appendChild(cv);
+            }
+            const psQr = $('#psQr');
+            if (psQr) psQr.src = qrDataUrl;
+            const editQr = $('#editQrCanvas');
+            if (editQr){
+              const ctx = editQr.getContext('2d');
+              const img = new Image();
+              img.onload = () => { ctx.clearRect(0,0,180,180); ctx.drawImage(img, 0, 0, 180, 180); };
+              img.src = qrDataUrl;
+            }
+          } else {
+            fallbackQrImage(tmp, text);
           }
-          const psQr = $('#psQr');
-          if (psQr) psQr.src = qrDataUrl;
-          // 编辑页二维码
-          const editQr = $('#editQrCanvas');
-          if (editQr){
-            const ctx = editQr.getContext('2d');
-            const img = new Image();
-            img.onload = () => { ctx.clearRect(0,0,180,180); ctx.drawImage(img, 0, 0, 180, 180); };
-            img.src = qrDataUrl;
-          }
-        } else {
-          fallbackQrImage(tmp, text);
-        }
-        if (tmp.parentNode) document.body.removeChild(tmp);
-      }, 90);
-      return;
-    }catch(e){ /* 落到图片兜底 */ }
-  }
-  fallbackQrImage(tmp, text);
+          if (tmp.parentNode) document.body.removeChild(tmp);
+          resolve();
+        }, 90);
+        return;
+      }catch(e){ /* 落到图片兜底 */ }
+    }
+    fallbackQrImage(tmp, text);
+    resolve();
+  });
 }
 
 function fallbackQrImage(tmp, text){
@@ -2774,19 +2799,23 @@ function saveCertImage(){
     const qrX = (W - qrSize) / 2;
     const qrY = bY + bH + 30;
 
-    if (qrDataUrl){
-      const qrImg = new Image();
-      qrImg.onload = () => {
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(qrX - 8, qrY - 8, qrSize + 16, qrSize + 16);
-        ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+    const drawQr = () => {
+      if (qrDataUrl){
+        const qrImg = new Image();
+        qrImg.onload = () => {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(qrX - 8, qrY - 8, qrSize + 16, qrSize + 16);
+          ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+          finalize();
+        };
+        qrImg.onerror = finalize;
+        qrImg.src = qrDataUrl;
+      } else {
         finalize();
-      };
-      qrImg.onerror = finalize;
-      qrImg.src = qrDataUrl;
-    } else {
-      finalize();
-    }
+      }
+    };
+    if (qrDataUrl){ drawQr(); }
+    else { buildQr().then(drawQr); }
   }
 
   function finalize(){
