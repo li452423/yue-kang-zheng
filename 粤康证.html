@@ -1575,7 +1575,7 @@ function saveEditForm(){
     issueOrg: $('#f-issueOrg').value.trim() || c.issueOrg,
     issueOrgCode: c.issueOrgCode,
     avatar: c.avatar,
-    avatarTiny: c.avatarTiny || ''
+    avatarUrl: c.avatarUrl || ''
   };
 
   saveCert(updated);
@@ -1634,6 +1634,35 @@ function onFileSelected(e, type){
   closeCapture();
 }
 
+// ====== 免费图床（catbox.moe 匿名上传，无需认证，支持 CORS） ======
+function uploadAvatarToHost(base64DataUrl){
+  return new Promise((resolve, reject) => {
+    // base64 转 Blob
+    const arr = base64DataUrl.split(',');
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8 = new Uint8Array(n);
+    while (n--) u8[n] = bstr.charCodeAt(n);
+    const blob = new Blob([u8], { type: mime });
+
+    const fd = new FormData();
+    fd.append('reqtype', 'fileupload');
+    fd.append('fileToUpload', blob, 'avatar.jpg');
+
+    fetch('https://catbox.moe/user/api.php', {
+      method: 'POST',
+      body: fd
+    }).then(r => r.text()).then(url => {
+      if (url && url.indexOf('http') === 0){
+        resolve(url.trim());
+      } else {
+        reject('上传失败：' + url);
+      }
+    }).catch(reject);
+  });
+}
+
 function handleAvatarFile(file){
   if (!file){ return; }
   if (!file.type.startsWith('image/')){ toast('请选择图片文件'); return; }
@@ -1642,9 +1671,9 @@ function handleAvatarFile(file){
   const reader = new FileReader();
   reader.onload = e => {
     const dataUrl = e.target.result;
-    // 压缩到合适尺寸（最长边 480）
     const img = new Image();
     img.onload = () => {
+      // 压缩到合适尺寸（最长边 480）
       const maxSide = 480;
       let w = img.width, h = img.height;
       if (w > h && w > maxSide){ h = Math.round(h * maxSide / w); w = maxSide; }
@@ -1654,19 +1683,11 @@ function handleAvatarFile(file){
       cv.getContext('2d').drawImage(img, 0, 0, w, h);
       const compressed = cv.toDataURL('image/jpeg', 0.85);
 
-      // 生成缩略图用于二维码（50x65, 低质量JPEG，尽量清晰但不超容量）
-      const tcv = document.createElement('canvas');
-      tcv.width = 50; tcv.height = 65;
-      tcv.getContext('2d').drawImage(img, 0, 0, 50, 65);
-      const tinyAvatar = tcv.toDataURL('image/jpeg', 0.35);
-
-      // 写入证照数据
       const c = getCert();
       c.avatar = compressed;
-      c.avatarTiny = tinyAvatar;
+      c.avatarUrl = ''; // 新头像需重新上传到 CDN
       saveCert(c);
 
-      // 更新编辑页头像预览
       const picker = $('#avatarPicker');
       picker.innerHTML = '<img src="' + compressed + '"><span class="cam">📷</span>';
       toast('头像已上传，记得点「保存资料」');
@@ -1678,26 +1699,15 @@ function handleAvatarFile(file){
 
 function verifyUrl(){
   const c = getCert();
-  // 头像只存原始 base64（去掉 data:image/jpeg;base64, 前缀，省 23 字节）
-  let av = '';
-  if (c.avatarTiny){
-    const m = c.avatarTiny.match(/^data:image\/\w+;base64,(.+)$/);
-    if (m) av = m[1];
-  }
-  // 只保留核心字段，把空间让给头像（体检单位显示默认值）
+  // 头像用 GitHub CDN 短链接，不占二维码容量
   const data = {
     n: c.name,
     g: c.gender,
     i: c.idCard,
     d: c.checkDate,
-    a: av
+    a: c.avatarUrl || ''
   };
-  let json = JSON.stringify(data);
-  // QR L级最大2953字节，扣前缀+编码膨胀，JSON上限约1900
-  if (json.length > 1900){
-    data.a = '';
-    json = JSON.stringify(data);
-  }
+  const json = JSON.stringify(data);
   const b64 = btoa(unescape(encodeURIComponent(json)));
   const base = location.origin + location.pathname;
   return base + '?cert=' + encodeURIComponent(b64);
@@ -1721,8 +1731,9 @@ function showCertFromUrl(){
     $('#cv-certNo').textContent = d.c || d.certNo || (d.i || d.idCard || '--');
     const av = d.a || d.avatar || '';
     if (av){
-      // 兼容：有前缀直接用，没前缀补回 data URI
-      const src = av.indexOf('data:') === 0 ? av : 'data:image/jpeg;base64,' + av;
+      // 兼容：CDN 链接直接用；base64 补回 data URI
+      const src = (av.indexOf('http') === 0 || av.indexOf('data:') === 0)
+        ? av : 'data:image/jpeg;base64,' + av;
       $('#cvPhoto').innerHTML = '<img src="' + src + '" alt="照片">';
     }
     // 生成核验二维码（重新编码当前 URL）
@@ -2281,60 +2292,27 @@ function buildSeal(){
    ========================================================= */
 let qrDataUrl = '';
 
-// 计算无头像时 JSON 的字节长度，反推头像可用空间
-function getAvatarBudget(c){
-  const base = {
-    n: c.name, g: c.gender, i: c.idCard,
-    d: c.checkDate, a: ''
-  };
-  // QR L级最大2953字节，扣URL前缀(~50)+base64膨胀(4/3)+URI编码(~1.1)
-  const MAX_JSON = 1900;
-  const baseLen = JSON.stringify(base).length;
-  return Math.max(0, MAX_JSON - baseLen); // 头像去前缀后的最大base64长度
-}
-
-// 确保当前证照有极小缩略图（用于二维码），没有则现场生成
-function ensureTinyAvatar(c){
+// 确保头像已上传到 GitHub CDN，返回 CDN 链接存入 avatarUrl
+function ensureAvatarUrl(c){
   return new Promise(resolve => {
-    const budget = getAvatarBudget(c);
-    if (budget <= 0){ resolve(); return; }
-    // 已有缩略图且在预算内，直接用
-    if (c.avatarTiny){
-      const m = c.avatarTiny.match(/^data:image\/\w+;base64,(.+)$/);
-      if (m && m[1].length <= budget){ resolve(); return; }
-    }
+    // 已有 CDN 链接，直接用
+    if (c.avatarUrl){ resolve(); return; }
     if (!c.avatar){ resolve(); return; }
-    const img = new Image();
-    img.onload = () => {
-      // 逐级尝试：尺寸从大到小、质量从高到低，找到第一个不超预算的
-      const attempts = [
-        [70, 91, 0.5], [60, 78, 0.45], [55, 72, 0.4],
-        [50, 65, 0.4], [50, 65, 0.3], [44, 57, 0.3],
-        [38, 50, 0.3], [32, 42, 0.25]
-      ];
-      const tcv = document.createElement('canvas');
-      const ctx = tcv.getContext('2d');
-      let picked = '';
-      for (const [w, h, q] of attempts){
-        tcv.width = w; tcv.height = h;
-        ctx.drawImage(img, 0, 0, w, h);
-        const dataUrl = tcv.toDataURL('image/jpeg', q);
-        const m = dataUrl.match(/^data:image\/\w+;base64,(.+)$/);
-        if (m && m[1].length <= budget){ picked = dataUrl; break; }
-        picked = dataUrl; // 兜底用最小的
-      }
-      c.avatarTiny = picked;
+    toast('正在上传头像到云端…', 2000);
+    uploadAvatarToHost(c.avatar).then(url => {
+      c.avatarUrl = url;
       saveCert(c);
       resolve();
-    };
-    img.onerror = () => resolve();
-    img.src = c.avatar;
+    }).catch(err => {
+      console.warn('头像上传失败，二维码将不含头像：', err);
+      resolve();
+    });
   });
 }
 
 function buildQr(){
   const c = getCert();
-  return ensureTinyAvatar(c).then(() => buildQrNow());
+  return ensureAvatarUrl(c).then(() => buildQrNow());
 }
 
 function buildQrNow(){
