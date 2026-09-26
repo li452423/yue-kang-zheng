@@ -1654,11 +1654,11 @@ function handleAvatarFile(file){
       cv.getContext('2d').drawImage(img, 0, 0, w, h);
       const compressed = cv.toDataURL('image/jpeg', 0.85);
 
-      // 生成极小缩略图用于二维码（25x33, 低质量JPEG，约400字节）
+      // 生成缩略图用于二维码（40x52, 中低质量JPEG）
       const tcv = document.createElement('canvas');
-      tcv.width = 25; tcv.height = 33;
-      tcv.getContext('2d').drawImage(img, 0, 0, 25, 33);
-      const tinyAvatar = tcv.toDataURL('image/jpeg', 0.3);
+      tcv.width = 40; tcv.height = 52;
+      tcv.getContext('2d').drawImage(img, 0, 0, 40, 52);
+      const tinyAvatar = tcv.toDataURL('image/jpeg', 0.4);
 
       // 写入证照数据
       const c = getCert();
@@ -2284,15 +2284,15 @@ let qrDataUrl = '';
 // 确保当前证照有极小缩略图（用于二维码），没有则现场生成
 function ensureTinyAvatar(c){
   return new Promise(resolve => {
-    // 已有小缩略图且不超过 700 字节（含前缀），直接用
-    if (c.avatarTiny && c.avatarTiny.length < 700){ resolve(); return; }
+    // 已有缩略图且不超过 1100 字节（含前缀），直接用
+    if (c.avatarTiny && c.avatarTiny.length < 1100){ resolve(); return; }
     if (!c.avatar){ resolve(); return; }
     const img = new Image();
     img.onload = () => {
       const tcv = document.createElement('canvas');
-      tcv.width = 25; tcv.height = 33;
-      tcv.getContext('2d').drawImage(img, 0, 0, 25, 33);
-      c.avatarTiny = tcv.toDataURL('image/jpeg', 0.3);
+      tcv.width = 40; tcv.height = 52;
+      tcv.getContext('2d').drawImage(img, 0, 0, 40, 52);
+      c.avatarTiny = tcv.toDataURL('image/jpeg', 0.4);
       saveCert(c);
       resolve();
     };
