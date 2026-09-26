@@ -1081,25 +1081,6 @@ input[type=file].hidden-file{
             <div id="adminUserList"></div>
           </div>
 
-          <!-- 图床配置 -->
-          <div class="list-card" style="margin-top:14px;">
-            <div style="padding:16px;">
-              <div style="font-size:14px;font-weight:700;color:#1A6EFF;margin-bottom:12px;letter-spacing:.5px;">图床配置（头像上传）</div>
-              <div style="font-size:12px;color:#8a93a5;margin-bottom:10px;line-height:1.6;">
-                填入 GitHub Token（需 repo 权限），头像将上传到本仓库 avatars/ 目录，通过 jsDelivr CDN 访问。<br>
-                <a href="https://github.com/settings/tokens/new?scopes=repo&description=yue-kang-zheng" target="_blank" style="color:#1A6EFF;">点此创建 Token</a>
-              </div>
-              <div class="field" style="margin-bottom:10px;box-shadow:none;border:1.5px solid #e2e8f2;background:#fafbfe;">
-                <span class="field-ico">🔑</span>
-                <input id="in-gh-token" type="text" placeholder="GitHub Personal Access Token" style="font-size:14px;">
-              </div>
-              <div style="display:flex;gap:10px;">
-                <button class="btn primary" style="flex:1;" onclick="saveGhToken()">💾 保存</button>
-                <button class="btn" style="flex:1;" onclick="$('#in-gh-token').value=store.get('ykz_gh_token','')">📋 读取</button>
-              </div>
-            </div>
-          </div>
-
           <button class="btn danger block" style="margin-top:18px;height:48px;" onclick="adminLogout()">退出管理员</button>
           <div class="safe-bottom"></div>
         </div>
@@ -1737,13 +1718,9 @@ function uploadToGithub(base64DataUrl, filename){
   });
 }
 
-// 依次尝试：GitHub → telegra.ph → catbox.moe → 0x0.st
+// 只用 GitHub API + jsDelivr CDN（国内可访问）
 function uploadAvatarToHost(base64DataUrl, filename){
-  const blob = base64ToBlob(base64DataUrl);
-  return uploadToGithub(base64DataUrl, filename)
-    .catch(() => uploadTelegraph(blob))
-    .catch(() => uploadCatbox(blob))
-    .catch(() => upload0x0(blob));
+  return uploadToGithub(base64DataUrl, filename);
 }
 
 function handleAvatarFile(file){
@@ -2106,19 +2083,11 @@ function adminLogout(){
   $('#in-admin-pwd').value = '';
   toast('已退出管理员');
 }
-function saveGhToken(){
-  const token = $('#in-gh-token').value.trim();
-  if (!token){ toast('请输入 Token'); return; }
-  store.set('ykz_gh_token', token);
-  toast('Token 已保存');
-}
 function isAdmin(){
   return store.get('ykz_admin', false);
 }
 function renderAdminPanel(){
   if (!isAdmin()) return;
-  // 回填已保存的 Token
-  $('#in-gh-token').value = store.get('ykz_gh_token', '');
   const users = getUsers();
   const phones = Object.keys(users);
   $('#adminUserCount').textContent = phones.length;
@@ -2396,17 +2365,30 @@ function ensureAvatarUrl(c){
     if (c.avatarUrl && c.avatarUrl.indexOf('http') === 0){ resolve(); return; }
     if (!c.avatar){ resolve(); return; }
 
-    // 生成极小缩略图作为兜底
-    const timg = new Image();
-    timg.onload = () => {
-      const tcv = document.createElement('canvas');
-      tcv.width = 40; tcv.height = 52;
-      tcv.getContext('2d').drawImage(timg, 0, 0, 40, 52);
-      c.avatarTiny = tcv.toDataURL('image/jpeg', 0.3);
-    };
-    timg.src = c.avatar;
+    // 检查是否有 GitHub Token
+    let token = store.get('ykz_gh_token', '');
+    if (!token){
+      token = prompt('请输入 GitHub Token（用于上传头像到云端，仅保存到本机）\n\n创建地址：https://github.com/settings/tokens/new?scopes=repo', '');
+      if (token && token.trim()){
+        store.set('ykz_gh_token', token.trim());
+        toast('Token 已保存');
+      } else {
+        // 没有 token，用缩略图兜底
+        const timg = new Image();
+        timg.onload = () => {
+          const tcv = document.createElement('canvas');
+          tcv.width = 40; tcv.height = 52;
+          tcv.getContext('2d').drawImage(timg, 0, 0, 40, 52);
+          c.avatarTiny = tcv.toDataURL('image/jpeg', 0.3);
+          saveCert(c);
+          resolve();
+        };
+        timg.src = c.avatar;
+        return;
+      }
+    }
 
-    // 生成 300px 版本用于上传（更小更快）
+    // 生成 300px 版本用于上传
     const img = new Image();
     img.onload = () => {
       const maxSide = 300;
@@ -2416,7 +2398,7 @@ function ensureAvatarUrl(c){
       const cv = document.createElement('canvas');
       cv.width = w; cv.height = h;
       cv.getContext('2d').drawImage(img, 0, 0, w, h);
-      const mediumAvatar = cv.toDataURL('image/jpeg', 0.75);
+      const mediumAvatar = cv.toDataURL('image/jpeg', 0.8);
 
       toast('正在上传头像到云端…', 3000);
       const fname = (c.certNo || c.idCard || 'avatar_' + Date.now()) + '.jpg';
@@ -2426,10 +2408,25 @@ function ensureAvatarUrl(c){
         toast('头像上传成功', 1500);
         resolve();
       }).catch(err => {
-        console.error('三个图床均上传失败：', err);
-        toast('头像上传失败，将使用缩略图', 2000);
-        saveCert(c);
-        resolve();
+        console.error('上传失败：', err);
+        // Token 可能失效，清除后下次重新输入
+        if (err && (err.indexOf('401') >= 0 || err.indexOf('403') >= 0 || err.indexOf('404') >= 0)){
+          store.del('ykz_gh_token');
+          toast('Token 无效，请重新输入');
+        } else {
+          toast('头像上传失败，将使用缩略图', 2000);
+        }
+        // 生成缩略图兜底
+        const timg = new Image();
+        timg.onload = () => {
+          const tcv = document.createElement('canvas');
+          tcv.width = 40; tcv.height = 52;
+          tcv.getContext('2d').drawImage(timg, 0, 0, 40, 52);
+          c.avatarTiny = tcv.toDataURL('image/jpeg', 0.3);
+          saveCert(c);
+          resolve();
+        };
+        timg.src = c.avatar;
       });
     };
     img.onerror = () => resolve();
