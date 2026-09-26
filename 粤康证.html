@@ -1654,11 +1654,11 @@ function handleAvatarFile(file){
       cv.getContext('2d').drawImage(img, 0, 0, w, h);
       const compressed = cv.toDataURL('image/jpeg', 0.85);
 
-      // 生成缩略图用于二维码（40x52, 中低质量JPEG）
+      // 生成缩略图用于二维码（50x65, 低质量JPEG，尽量清晰但不超容量）
       const tcv = document.createElement('canvas');
-      tcv.width = 40; tcv.height = 52;
-      tcv.getContext('2d').drawImage(img, 0, 0, 40, 52);
-      const tinyAvatar = tcv.toDataURL('image/jpeg', 0.4);
+      tcv.width = 50; tcv.height = 65;
+      tcv.getContext('2d').drawImage(img, 0, 0, 50, 65);
+      const tinyAvatar = tcv.toDataURL('image/jpeg', 0.35);
 
       // 写入证照数据
       const c = getCert();
@@ -1695,8 +1695,8 @@ function verifyUrl(){
     a: av
   };
   let json = JSON.stringify(data);
-  // 二维码容量上限约 2900 字节，超长则去掉头像只保留文字资料
-  if (json.length > 1800){
+  // QR码L级最大2953字节，扣URL前缀+base64膨胀+URI编码，JSON安全上限约1600字节
+  if (json.length > 1600){
     data.a = '';
     json = JSON.stringify(data);
   }
@@ -2284,15 +2284,15 @@ let qrDataUrl = '';
 // 确保当前证照有极小缩略图（用于二维码），没有则现场生成
 function ensureTinyAvatar(c){
   return new Promise(resolve => {
-    // 已有缩略图且不超过 1100 字节（含前缀），直接用
-    if (c.avatarTiny && c.avatarTiny.length < 1100){ resolve(); return; }
+    // 已有缩略图且不超过 1400 字节（含前缀），直接用
+    if (c.avatarTiny && c.avatarTiny.length < 1400){ resolve(); return; }
     if (!c.avatar){ resolve(); return; }
     const img = new Image();
     img.onload = () => {
       const tcv = document.createElement('canvas');
-      tcv.width = 40; tcv.height = 52;
-      tcv.getContext('2d').drawImage(img, 0, 0, 40, 52);
-      c.avatarTiny = tcv.toDataURL('image/jpeg', 0.4);
+      tcv.width = 50; tcv.height = 65;
+      tcv.getContext('2d').drawImage(img, 0, 0, 50, 65);
+      c.avatarTiny = tcv.toDataURL('image/jpeg', 0.35);
       saveCert(c);
       resolve();
     };
