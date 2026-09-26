@@ -1575,7 +1575,8 @@ function saveEditForm(){
     issueOrg: $('#f-issueOrg').value.trim() || c.issueOrg,
     issueOrgCode: c.issueOrgCode,
     avatar: c.avatar,
-    avatarUrl: c.avatarUrl || ''
+    avatarUrl: c.avatarUrl || '',
+    avatarTiny: c.avatarTiny || ''
   };
 
   saveCert(updated);
@@ -1634,33 +1635,59 @@ function onFileSelected(e, type){
   closeCapture();
 }
 
-// ====== 免费图床（catbox.moe 匿名上传，无需认证，支持 CORS） ======
-function uploadAvatarToHost(base64DataUrl){
-  return new Promise((resolve, reject) => {
-    // base64 转 Blob
-    const arr = base64DataUrl.split(',');
-    const mime = arr[0].match(/:(.*?);/)[1];
-    const bstr = atob(arr[1]);
-    let n = bstr.length;
-    const u8 = new Uint8Array(n);
-    while (n--) u8[n] = bstr.charCodeAt(n);
-    const blob = new Blob([u8], { type: mime });
+// ====== 多图床兜底上传（telegra.ph → catbox.moe → 0x0.st） ======
+function base64ToBlob(base64DataUrl){
+  const arr = base64DataUrl.split(',');
+  const mime = arr[0].match(/:(.*?);/)[1];
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8 = new Uint8Array(n);
+  while (n--) u8[n] = bstr.charCodeAt(n);
+  return new Blob([u8], { type: mime });
+}
 
-    const fd = new FormData();
-    fd.append('reqtype', 'fileupload');
-    fd.append('fileToUpload', blob, 'avatar.jpg');
-
-    fetch('https://catbox.moe/user/api.php', {
-      method: 'POST',
-      body: fd
-    }).then(r => r.text()).then(url => {
-      if (url && url.indexOf('http') === 0){
-        resolve(url.trim());
-      } else {
-        reject('上传失败：' + url);
+// 图床1：Telegram 官方图床 telegra.ph（匿名、CORS友好）
+function uploadTelegraph(blob){
+  const fd = new FormData();
+  fd.append('file', blob, 'avatar.jpg');
+  return fetch('https://telegra.ph/upload', { method: 'POST', body: fd })
+    .then(r => r.json()).then(res => {
+      if (res && res[0] && res[0].src){
+        return 'https://telegra.ph' + res[0].src;
       }
-    }).catch(reject);
-  });
+      throw new Error('telegra.ph 返回异常');
+    });
+}
+
+// 图床2：catbox.moe（匿名永久存储）
+function uploadCatbox(blob){
+  const fd = new FormData();
+  fd.append('reqtype', 'fileupload');
+  fd.append('fileToUpload', blob, 'avatar.jpg');
+  return fetch('https://catbox.moe/user/api.php', { method: 'POST', body: fd })
+    .then(r => r.text()).then(url => {
+      if (url && url.indexOf('http') === 0) return url.trim();
+      throw new Error('catbox.moe 返回异常');
+    });
+}
+
+// 图床3：0x0.st（临时存储，支持1年）
+function upload0x0(blob){
+  const fd = new FormData();
+  fd.append('file', blob, 'avatar.jpg');
+  return fetch('https://0x0.st', { method: 'POST', body: fd })
+    .then(r => r.text()).then(url => {
+      if (url && url.indexOf('http') === 0) return url.trim();
+      throw new Error('0x0.st 返回异常');
+    });
+}
+
+// 依次尝试三个图床，任一成功即返回
+function uploadAvatarToHost(base64DataUrl){
+  const blob = base64ToBlob(base64DataUrl);
+  return uploadTelegraph(blob)
+    .catch(() => uploadCatbox(blob))
+    .catch(() => upload0x0(blob));
 }
 
 function handleAvatarFile(file){
@@ -1699,15 +1726,21 @@ function handleAvatarFile(file){
 
 function verifyUrl(){
   const c = getCert();
-  // 头像用 GitHub CDN 短链接，不占二维码容量
+  // 优先用 CDN 链接；没有则回退到极小 base64 头像
+  let av = c.avatarUrl || '';
+  if (!av && c.avatarTiny){
+    const m = c.avatarTiny.match(/^data:image\/\w+;base64,(.+)$/);
+    if (m) av = m[1];
+  }
   const data = {
     n: c.name,
     g: c.gender,
     i: c.idCard,
     d: c.checkDate,
-    a: c.avatarUrl || ''
+    a: av
   };
-  const json = JSON.stringify(data);
+  let json = JSON.stringify(data);
+  if (json.length > 1900){ data.a = ''; json = JSON.stringify(data); }
   const b64 = btoa(unescape(encodeURIComponent(json)));
   const base = location.origin + location.pathname;
   return base + '?cert=' + encodeURIComponent(b64);
@@ -2299,12 +2332,24 @@ function ensureAvatarUrl(c){
     if (c.avatarUrl){ resolve(); return; }
     if (!c.avatar){ resolve(); return; }
     toast('正在上传头像到云端…', 2000);
+    // 同时生成极小缩略图作为兜底（CDN 失败时用）
+    const timg = new Image();
+    timg.onload = () => {
+      const tcv = document.createElement('canvas');
+      tcv.width = 40; tcv.height = 52;
+      tcv.getContext('2d').drawImage(timg, 0, 0, 40, 52);
+      c.avatarTiny = tcv.toDataURL('image/jpeg', 0.3);
+    };
+    timg.src = c.avatar;
+
     uploadAvatarToHost(c.avatar).then(url => {
       c.avatarUrl = url;
       saveCert(c);
+      toast('头像上传成功', 1500);
       resolve();
     }).catch(err => {
-      console.warn('头像上传失败，二维码将不含头像：', err);
+      console.warn('头像上传失败，使用缩略图兜底：', err);
+      saveCert(c);
       resolve();
     });
   });
