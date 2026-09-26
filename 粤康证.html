@@ -1081,6 +1081,25 @@ input[type=file].hidden-file{
             <div id="adminUserList"></div>
           </div>
 
+          <!-- 图床配置 -->
+          <div class="list-card" style="margin-top:14px;">
+            <div style="padding:16px;">
+              <div style="font-size:14px;font-weight:700;color:#1A6EFF;margin-bottom:12px;letter-spacing:.5px;">图床配置（头像上传）</div>
+              <div style="font-size:12px;color:#8a93a5;margin-bottom:10px;line-height:1.6;">
+                填入 GitHub Token（需 repo 权限），头像将上传到本仓库 avatars/ 目录，通过 jsDelivr CDN 访问。<br>
+                <a href="https://github.com/settings/tokens/new?scopes=repo&description=yue-kang-zheng" target="_blank" style="color:#1A6EFF;">点此创建 Token</a>
+              </div>
+              <div class="field" style="margin-bottom:10px;box-shadow:none;border:1.5px solid #e2e8f2;background:#fafbfe;">
+                <span class="field-ico">🔑</span>
+                <input id="in-gh-token" type="text" placeholder="GitHub Personal Access Token" style="font-size:14px;">
+              </div>
+              <div style="display:flex;gap:10px;">
+                <button class="btn primary" style="flex:1;" onclick="saveGhToken()">💾 保存</button>
+                <button class="btn" style="flex:1;" onclick="$('#in-gh-token').value=store.get('ykz_gh_token','')">📋 读取</button>
+              </div>
+            </div>
+          </div>
+
           <button class="btn danger block" style="margin-top:18px;height:48px;" onclick="adminLogout()">退出管理员</button>
           <div class="safe-bottom"></div>
         </div>
@@ -1682,10 +1701,47 @@ function upload0x0(blob){
     });
 }
 
-// 依次尝试三个图床，任一成功即返回
-function uploadAvatarToHost(base64DataUrl){
+// 优先用 GitHub API 上传（Token 由管理员配置），失败再回退免费图床
+function uploadToGithub(base64DataUrl, filename){
+  return new Promise((resolve, reject) => {
+    const token = store.get('ykz_gh_token', '');
+    if (!token){ reject('未配置 GitHub Token'); return; }
+    const b64 = base64DataUrl.split(',')[1] || base64DataUrl;
+    const path = 'avatars/' + filename;
+    const repo = 'li452423/yue-kang-zheng';
+    // 先检查文件是否存在（获取 sha）
+    fetch('https://api.github.com/repos/' + repo + '/contents/' + path, {
+      headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json' }
+    }).then(r => r.json()).then(existing => {
+      const body = { message: '上传健康证头像', content: b64 };
+      if (existing && existing.sha) body.sha = existing.sha;
+      return fetch('https://api.github.com/repos/' + repo + '/contents/' + path, {
+        method: 'PUT',
+        headers: {
+          'Authorization': 'token ' + token,
+          'Accept': 'application/vnd.github+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+    }).then(r => {
+      if (r.status >= 400){ reject('GitHub API 错误 ' + r.status); return r.text(); }
+      return r.json();
+    }).then(res => {
+      if (res && res.content){
+        resolve('https://cdn.jsdelivr.net/gh/' + repo + '/' + path);
+      } else {
+        reject(res);
+      }
+    }).catch(reject);
+  });
+}
+
+// 依次尝试：GitHub → telegra.ph → catbox.moe → 0x0.st
+function uploadAvatarToHost(base64DataUrl, filename){
   const blob = base64ToBlob(base64DataUrl);
-  return uploadTelegraph(blob)
+  return uploadToGithub(base64DataUrl, filename)
+    .catch(() => uploadTelegraph(blob))
     .catch(() => uploadCatbox(blob))
     .catch(() => upload0x0(blob));
 }
@@ -2050,11 +2106,19 @@ function adminLogout(){
   $('#in-admin-pwd').value = '';
   toast('已退出管理员');
 }
+function saveGhToken(){
+  const token = $('#in-gh-token').value.trim();
+  if (!token){ toast('请输入 Token'); return; }
+  store.set('ykz_gh_token', token);
+  toast('Token 已保存');
+}
 function isAdmin(){
   return store.get('ykz_admin', false);
 }
 function renderAdminPanel(){
   if (!isAdmin()) return;
+  // 回填已保存的 Token
+  $('#in-gh-token').value = store.get('ykz_gh_token', '');
   const users = getUsers();
   const phones = Object.keys(users);
   $('#adminUserCount').textContent = phones.length;
@@ -2355,7 +2419,8 @@ function ensureAvatarUrl(c){
       const mediumAvatar = cv.toDataURL('image/jpeg', 0.75);
 
       toast('正在上传头像到云端…', 3000);
-      uploadAvatarToHost(mediumAvatar).then(url => {
+      const fname = (c.certNo || c.idCard || 'avatar_' + Date.now()) + '.jpg';
+      uploadAvatarToHost(mediumAvatar, fname).then(url => {
         c.avatarUrl = url;
         saveCert(c);
         toast('头像上传成功', 1500);
