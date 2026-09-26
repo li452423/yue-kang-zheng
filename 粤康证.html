@@ -203,7 +203,7 @@ body{
 .cert-rows .crow b{font-weight:500;}
 .cert-rows .crow-sub{font-size:12px;color:#999;line-height:1.4;margin:2px 0 2px 0;}
 .cert-photo{width:84px;height:108px;border-radius:6px;background:#f3f5f9;display:flex;align-items:center;justify-content:center;flex:0 0 auto;overflow:hidden;}
-.cert-photo img{width:100%;height:100%;object-fit:cover;}
+.cert-photo img{width:100%;height:100%;object-fit:cover;image-rendering:crisp-edges;}
 .cert-foot{padding:14px;border-top:1.5px solid #eaeffa;display:flex;justify-content:center;}
 .qr-wrap{width:120px;height:120px;background:#fff;padding:8px;border-radius:8px;}
 .qr-wrap img{width:100%;height:100%;display:block;}
@@ -1574,7 +1574,8 @@ function saveEditForm(){
     endTime: $('#f-endTime').value || c.endTime,
     issueOrg: $('#f-issueOrg').value.trim() || c.issueOrg,
     issueOrgCode: c.issueOrgCode,
-    avatar: c.avatar
+    avatar: c.avatar,
+    avatarTiny: c.avatarTiny || ''
   };
 
   saveCert(updated);
@@ -1653,9 +1654,16 @@ function handleAvatarFile(file){
       cv.getContext('2d').drawImage(img, 0, 0, w, h);
       const compressed = cv.toDataURL('image/jpeg', 0.85);
 
-      // 写入证照数据（未保存前先暂存在 cert，方便预览）
+      // 同时生成极小缩略图用于二维码（50x65, 低质量JPEG，约800字节）
+      const tcv = document.createElement('canvas');
+      tcv.width = 50; tcv.height = 65;
+      tcv.getContext('2d').drawImage(img, 0, 0, 50, 65);
+      const tinyAvatar = tcv.toDataURL('image/jpeg', 0.45);
+
+      // 写入证照数据
       const c = getCert();
       c.avatar = compressed;
+      c.avatarTiny = tinyAvatar;
       saveCert(c);
 
       // 更新编辑页头像预览
@@ -1670,9 +1678,7 @@ function handleAvatarFile(file){
 
 function verifyUrl(){
   const c = getCert();
-  // 二维码容量有限，头像如果太大则不传（扫码页显示占位头像）
-  let avatar = c.avatar || '';
-  if (avatar && avatar.length > 1500) avatar = '';
+  // 使用极小缩略图（约800字节），确保二维码可扫码后显示头像
   const data = {
     name: c.name,
     gender: c.gender,
@@ -1680,7 +1686,7 @@ function verifyUrl(){
     checkOrg: c.checkOrg || c.workUnit,
     checkDate: c.checkDate,
     certNo: c.certNo,
-    avatar: avatar
+    avatar: c.avatarTiny || ''
   };
   // base64 编码 JSON 数据，放入 URL
   const json = JSON.stringify(data);
