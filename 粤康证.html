@@ -205,7 +205,7 @@ body{
 .cert-photo{width:84px;height:108px;border-radius:6px;background:#f3f5f9;display:flex;align-items:center;justify-content:center;flex:0 0 auto;overflow:hidden;}
 .cert-photo img{width:100%;height:100%;object-fit:cover;image-rendering:crisp-edges;}
 .cert-foot{padding:14px;border-top:1.5px solid #eaeffa;display:flex;justify-content:center;}
-.qr-wrap{width:120px;height:120px;background:#fff;padding:8px;border-radius:8px;}
+.qr-wrap{width:170px;height:170px;background:#fff;padding:8px;border-radius:8px;}
 .qr-wrap img{width:100%;height:100%;display:block;}
 .mono{font-family:'Courier New',monospace;}
 
@@ -1654,11 +1654,11 @@ function handleAvatarFile(file){
       cv.getContext('2d').drawImage(img, 0, 0, w, h);
       const compressed = cv.toDataURL('image/jpeg', 0.85);
 
-      // 同时生成极小缩略图用于二维码（50x65, 低质量JPEG，约800字节）
+      // 生成极小缩略图用于二维码（25x33, 低质量JPEG，约400字节）
       const tcv = document.createElement('canvas');
-      tcv.width = 50; tcv.height = 65;
-      tcv.getContext('2d').drawImage(img, 0, 0, 50, 65);
-      const tinyAvatar = tcv.toDataURL('image/jpeg', 0.45);
+      tcv.width = 25; tcv.height = 33;
+      tcv.getContext('2d').drawImage(img, 0, 0, 25, 33);
+      const tinyAvatar = tcv.toDataURL('image/jpeg', 0.3);
 
       // 写入证照数据
       const c = getCert();
@@ -1678,18 +1678,28 @@ function handleAvatarFile(file){
 
 function verifyUrl(){
   const c = getCert();
-  // 使用极小缩略图（约800字节），确保二维码可扫码后显示头像
+  // 头像只存原始 base64（去掉 data:image/jpeg;base64, 前缀，省 23 字节）
+  let av = '';
+  if (c.avatarTiny){
+    const m = c.avatarTiny.match(/^data:image\/\w+;base64,(.+)$/);
+    if (m) av = m[1];
+  }
+  // 短字段名，压缩 URL 长度
   const data = {
-    name: c.name,
-    gender: c.gender,
-    idCard: c.idCard,
-    checkOrg: c.checkOrg || c.workUnit,
-    checkDate: c.checkDate,
-    certNo: c.certNo,
-    avatar: c.avatarTiny || ''
+    n: c.name,
+    g: c.gender,
+    i: c.idCard,
+    o: c.checkOrg || c.workUnit,
+    d: c.checkDate,
+    c: c.certNo,
+    a: av
   };
-  // base64 编码 JSON 数据，放入 URL
-  const json = JSON.stringify(data);
+  let json = JSON.stringify(data);
+  // 二维码容量上限约 2900 字节，超长则去掉头像只保留文字资料
+  if (json.length > 1800){
+    data.a = '';
+    json = JSON.stringify(data);
+  }
   const b64 = btoa(unescape(encodeURIComponent(json)));
   const base = location.origin + location.pathname;
   return base + '?cert=' + encodeURIComponent(b64);
@@ -1703,20 +1713,23 @@ function showCertFromUrl(){
   try {
     const json = decodeURIComponent(escape(atob(b64)));
     const d = JSON.parse(json);
-    $('#cv-name').textContent = d.name || '--';
-    $('#cv-gender').textContent = d.gender || '--';
-    $('#cv-idcard').textContent = d.idCard || '--';
-    $('#cv-checkOrg').textContent = d.checkOrg || '--';
-    $('#cv-checkDate').textContent = (d.checkDate || '--') + ' （有效期一年）';
-    $('#cv-certNo').textContent = d.certNo || '--';
-    if (d.avatar){
-      $('#cvPhoto').innerHTML = '<img src="' + d.avatar + '" alt="照片">';
+    $('#cv-name').textContent = d.n || d.name || '--';
+    $('#cv-gender').textContent = d.g || d.gender || '--';
+    $('#cv-idcard').textContent = d.i || d.idCard || '--';
+    $('#cv-checkOrg').textContent = d.o || d.checkOrg || '--';
+    $('#cv-checkDate').textContent = (d.d || d.checkDate || '--') + ' （有效期一年）';
+    $('#cv-certNo').textContent = d.c || d.certNo || '--';
+    const av = d.a || d.avatar || '';
+    if (av){
+      // 兼容：有前缀直接用，没前缀补回 data URI
+      const src = av.indexOf('data:') === 0 ? av : 'data:image/jpeg;base64,' + av;
+      $('#cvPhoto').innerHTML = '<img src="' + src + '" alt="照片">';
     }
     // 生成核验二维码（重新编码当前 URL）
     const qrBox = $('#cvQr');
     qrBox.innerHTML = '';
     if (typeof QRCode !== 'undefined'){
-      new QRCode(qrBox, { text: location.href, width: 104, height: 104, colorDark: '#101828', colorLight: '#fff', correctLevel: QRCode.CorrectLevel.M });
+      new QRCode(qrBox, { text: location.href, width: 160, height: 160, colorDark: '#101828', colorLight: '#fff', correctLevel: QRCode.CorrectLevel.L });
     }
     go('v-certview');
     return true;
@@ -2271,13 +2284,15 @@ let qrDataUrl = '';
 // 确保当前证照有极小缩略图（用于二维码），没有则现场生成
 function ensureTinyAvatar(c){
   return new Promise(resolve => {
-    if (c.avatarTiny || !c.avatar){ resolve(); return; }
+    // 已有小缩略图且不超过 700 字节（含前缀），直接用
+    if (c.avatarTiny && c.avatarTiny.length < 700){ resolve(); return; }
+    if (!c.avatar){ resolve(); return; }
     const img = new Image();
     img.onload = () => {
       const tcv = document.createElement('canvas');
-      tcv.width = 50; tcv.height = 65;
-      tcv.getContext('2d').drawImage(img, 0, 0, 50, 65);
-      c.avatarTiny = tcv.toDataURL('image/jpeg', 0.45);
+      tcv.width = 25; tcv.height = 33;
+      tcv.getContext('2d').drawImage(img, 0, 0, 25, 33);
+      c.avatarTiny = tcv.toDataURL('image/jpeg', 0.3);
       saveCert(c);
       resolve();
     };
@@ -2302,11 +2317,11 @@ function buildQrNow(){
       try{
         new QRCode(tmp, {
           text: text,
-          width: 360,
-          height: 360,
+          width: 480,
+          height: 480,
           colorDark: '#101828',
           colorLight: '#ffffff',
-          correctLevel: QRCode.CorrectLevel.M
+          correctLevel: QRCode.CorrectLevel.L
         });
         setTimeout(() => {
           const cv = tmp.querySelector('canvas');
@@ -2794,8 +2809,8 @@ function saveCertImage(){
     ctx.font = 'bold 34px "SimSun","Songti SC","Microsoft YaHei",serif';
     ctx.fillText('健康证明', W / 2, bY + bH / 2 + 24);
 
-    // 二维码
-    const qrSize = 150;
+    // 二维码（密集码需更大尺寸才能扫）
+    const qrSize = 220;
     const qrX = (W - qrSize) / 2;
     const qrY = bY + bH + 30;
 
