@@ -2325,14 +2325,14 @@ function buildSeal(){
    ========================================================= */
 let qrDataUrl = '';
 
-// 确保头像已上传到 GitHub CDN，返回 CDN 链接存入 avatarUrl
+// 确保头像已上传到图床，返回 CDN 链接存入 avatarUrl
 function ensureAvatarUrl(c){
   return new Promise(resolve => {
     // 已有 CDN 链接，直接用
-    if (c.avatarUrl){ resolve(); return; }
+    if (c.avatarUrl && c.avatarUrl.indexOf('http') === 0){ resolve(); return; }
     if (!c.avatar){ resolve(); return; }
-    toast('正在上传头像到云端…', 2000);
-    // 同时生成极小缩略图作为兜底（CDN 失败时用）
+
+    // 生成极小缩略图作为兜底
     const timg = new Image();
     timg.onload = () => {
       const tcv = document.createElement('canvas');
@@ -2342,16 +2342,33 @@ function ensureAvatarUrl(c){
     };
     timg.src = c.avatar;
 
-    uploadAvatarToHost(c.avatar).then(url => {
-      c.avatarUrl = url;
-      saveCert(c);
-      toast('头像上传成功', 1500);
-      resolve();
-    }).catch(err => {
-      console.warn('头像上传失败，使用缩略图兜底：', err);
-      saveCert(c);
-      resolve();
-    });
+    // 生成 300px 版本用于上传（更小更快）
+    const img = new Image();
+    img.onload = () => {
+      const maxSide = 300;
+      let w = img.width, h = img.height;
+      if (w > h && w > maxSide){ h = Math.round(h * maxSide / w); w = maxSide; }
+      else if (h > maxSide){ w = Math.round(w * maxSide / h); h = maxSide; }
+      const cv = document.createElement('canvas');
+      cv.width = w; cv.height = h;
+      cv.getContext('2d').drawImage(img, 0, 0, w, h);
+      const mediumAvatar = cv.toDataURL('image/jpeg', 0.75);
+
+      toast('正在上传头像到云端…', 3000);
+      uploadAvatarToHost(mediumAvatar).then(url => {
+        c.avatarUrl = url;
+        saveCert(c);
+        toast('头像上传成功', 1500);
+        resolve();
+      }).catch(err => {
+        console.error('三个图床均上传失败：', err);
+        toast('头像上传失败，将使用缩略图', 2000);
+        saveCert(c);
+        resolve();
+      });
+    };
+    img.onerror = () => resolve();
+    img.src = c.avatar;
   });
 }
 
@@ -2883,8 +2900,9 @@ function saveCertImage(){
         finalize();
       }
     };
-    if (qrDataUrl){ drawQr(); }
-    else { buildQr().then(drawQr); }
+    // 每次保存都重新生成二维码（确保头像已上传到 CDN）
+    qrDataUrl = '';
+    buildQr().then(drawQr);
   }
 
   function finalize(){
