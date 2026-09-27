@@ -1826,8 +1826,8 @@ function handleAvatarFile(file){
   reader.readAsDataURL(file);
 }
 
-function verifyUrl(){
-  const c = getCert();
+function verifyUrl(c){
+  if (!c) c = getCert();
   // 优先用 CDN 链接；没有则回退到极小 base64 头像
   let av = c.avatarUrl || '';
   if (!av && c.avatarTiny){
@@ -2499,12 +2499,12 @@ function ensureAvatarUrl(c){
 
 function buildQr(){
   const c = getCert();
-  return ensureAvatarUrl(c).then(() => buildQrNow());
+  return ensureAvatarUrl(c).then(() => buildQrNow(c));
 }
 
-function buildQrNow(){
+function buildQrNow(c){
   return new Promise(resolve => {
-    const text = verifyUrl();
+    const text = verifyUrl(c);
     const tmp = document.createElement('div');
     tmp.style.cssText = 'position:fixed;left:-9999px;top:0;';
     document.body.appendChild(tmp);
