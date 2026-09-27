@@ -1690,13 +1690,20 @@ function uploadToGithub(base64DataUrl, filename){
     const b64 = base64DataUrl.split(',')[1] || base64DataUrl;
     const path = 'avatars/' + filename;
     const repo = 'li452423/yue-kang-zheng';
+    const apiUrl = 'https://api.github.com/repos/' + repo + '/contents/' + path;
+
     // 先检查文件是否存在（获取 sha）
-    fetch('https://api.github.com/repos/' + repo + '/contents/' + path, {
+    fetch(apiUrl, {
       headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json' }
-    }).then(r => r.json()).then(existing => {
+    }).then(r => {
+      if (r.status === 401 || r.status === 403){ reject('Token 无效 (HTTP ' + r.status + ')'); return null; }
+      if (r.status === 404){ return null; } // 文件不存在，正常
+      return r.json();
+    }).then(existing => {
+      if (existing === null) return; // Token 无效，已 reject
       const body = { message: '上传健康证头像', content: b64 };
       if (existing && existing.sha) body.sha = existing.sha;
-      return fetch('https://api.github.com/repos/' + repo + '/contents/' + path, {
+      return fetch(apiUrl, {
         method: 'PUT',
         headers: {
           'Authorization': 'token ' + token,
@@ -1706,15 +1713,20 @@ function uploadToGithub(base64DataUrl, filename){
         body: JSON.stringify(body)
       });
     }).then(r => {
-      if (r.status >= 400){ reject('GitHub API 错误 ' + r.status); return r.text(); }
+      if (!r) return null; // 已 reject
+      if (r.status >= 400){
+        return r.json().then(err => { reject('上传失败: ' + (err.message || 'HTTP ' + r.status)); return null; });
+      }
       return r.json();
     }).then(res => {
       if (res && res.content){
         resolve('https://cdn.jsdelivr.net/gh/' + repo + '/' + path);
-      } else {
+      } else if (res) {
         reject(res);
       }
-    }).catch(reject);
+    }).catch(err => {
+      reject(err || '网络错误');
+    });
   });
 }
 
@@ -2409,12 +2421,16 @@ function ensureAvatarUrl(c){
         resolve();
       }).catch(err => {
         console.error('上传失败：', err);
+        const errMsg = (typeof err === 'string') ? err : JSON.stringify(err);
         // Token 可能失效，清除后下次重新输入
-        if (err && (err.indexOf('401') >= 0 || err.indexOf('403') >= 0 || err.indexOf('404') >= 0)){
+        if (errMsg.indexOf('401') >= 0 || errMsg.indexOf('403') >= 0 || errMsg.indexOf('Bad credentials') >= 0){
           store.del('ykz_gh_token');
-          toast('Token 无效，请重新输入');
+          toast('Token 无效或权限不足，请重新输入', 3000);
+        } else if (errMsg.indexOf('404') >= 0){
+          store.del('ykz_gh_token');
+          toast('仓库不存在或 Token 无 repo 权限', 3000);
         } else {
-          toast('头像上传失败，将使用缩略图', 2000);
+          toast('上传失败：' + errMsg.slice(0, 30), 3000);
         }
         // 生成缩略图兜底
         const timg = new Image();
