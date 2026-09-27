@@ -2427,12 +2427,22 @@ function buildSeal(){
    ========================================================= */
 let qrDataUrl = '';
 
+// 简单 hash：取 base64 前 80 字符（头像变化时 hash 会变）
+function avatarHash(avatar){
+  if (!avatar) return '';
+  const b64 = avatar.split(',')[1] || avatar;
+  return b64.slice(0, 80);
+}
+
 // 确保头像已上传到图床，返回 CDN 链接存入 avatarUrl
 function ensureAvatarUrl(c){
   return new Promise(resolve => {
-    // 已有 CDN 链接，直接用
-    if (c.avatarUrl && c.avatarUrl.indexOf('http') === 0){ resolve(); return; }
     if (!c.avatar){ resolve(); return; }
+    const hash = avatarHash(c.avatar);
+    // 已有 CDN 链接且头像未变，直接用
+    if (c.avatarUrl && c.avatarUrl.indexOf('http') === 0 && c._avatarHash === hash){
+      resolve(); return;
+    }
 
     // 生成 300px 版本用于上传
     const img = new Image();
@@ -2450,6 +2460,7 @@ function ensureAvatarUrl(c){
       const fname = (c.certNo || c.idCard || 'avatar_' + Date.now()) + '.jpg';
       uploadAvatarToHost(mediumAvatar, fname).then(url => {
         c.avatarUrl = url;
+        c._avatarHash = hash;
         saveCert(c);
         toast('头像上传成功', 1500);
         resolve();
@@ -2467,6 +2478,8 @@ function ensureAvatarUrl(c){
           toast('上传失败：' + errMsg.slice(0, 30), 3000);
         }
         // 生成缩略图兜底
+        c.avatarUrl = ''; // 清空错误的 CDN 链接
+        c._avatarHash = hash;
         const timg = new Image();
         timg.onload = () => {
           const tcv = document.createElement('canvas');
