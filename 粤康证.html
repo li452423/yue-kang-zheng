@@ -1701,18 +1701,24 @@ function uploadToGithub(base64DataUrl, filename){
     const repo = 'li452423/yue-kang-zheng';
     const apiUrl = 'https://api.github.com/repos/' + repo + '/contents/' + path;
 
-    // 先检查文件是否存在（获取 sha）
-    fetch(apiUrl, {
-      headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github+json' }
-    }).then(r => {
-      if (r.status === 401 || r.status === 403){ reject('Token 无效 (HTTP ' + r.status + ')'); return null; }
-      if (r.status === 404){ return null; } // 文件不存在，正常
-      return r.json();
-    }).then(existing => {
-      if (existing === null) return; // Token 无效，已 reject
+    // 超时控制：15秒
+    let done = false;
+    const timer = setTimeout(() => {
+      if (!done){ done = true; reject('上传超时'); }
+    }, 15000);
+
+    const finish = (err, url) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      if (err) reject(err); else resolve(url);
+    };
+
+    // 直接上传（不先检查，文件存在时 GitHub 会返回错误，我们带 sha 重试）
+    const doUpload = (sha) => {
       const body = { message: '上传健康证头像', content: b64 };
-      if (existing && existing.sha) body.sha = existing.sha;
-      return fetch(apiUrl, {
+      if (sha) body.sha = sha;
+      fetch(apiUrl, {
         method: 'PUT',
         headers: {
           'Authorization': 'token ' + token,
@@ -1720,28 +1726,70 @@ function uploadToGithub(base64DataUrl, filename){
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(body)
-      });
-    }).then(r => {
-      if (!r) return null; // 已 reject
-      if (r.status >= 400){
-        return r.json().then(err => { reject('上传失败: ' + (err.message || 'HTTP ' + r.status)); return null; });
-      }
-      return r.json();
-    }).then(res => {
-      if (res && res.content){
-        resolve('https://cdn.jsdelivr.net/gh/' + repo + '/' + path);
-      } else if (res) {
-        reject(res);
-      }
-    }).catch(err => {
-      reject(err || '网络错误');
-    });
+      }).then(r => {
+        if (r.status === 401 || r.status === 403){ finish('Token 无效 (HTTP ' + r.status + ')'); return; }
+        if (r.status >= 400){
+          r.json().then(err => {
+            // 如果是文件已存在冲突，先获取 sha 再重试
+            if (err.message && err.message.indexOf('sha') >= 0){
+              fetch(apiUrl, { headers: { 'Authorization': 'token ' + token } }).then(r2 => r2.json()).then(ex => {
+                if (ex && ex.sha) doUpload(ex.sha);
+                else finish('上传失败: ' + err.message);
+              }).catch(e => finish('上传失败: ' + err.message));
+            } else {
+              finish('上传失败: ' + (err.message || 'HTTP ' + r.status));
+            }
+          }).catch(() => finish('上传失败: HTTP ' + r.status));
+          return;
+        }
+        r.json().then(res => {
+          if (res && res.content){
+            finish(null, 'https://cdn.jsdelivr.net/gh/' + repo + '/' + path);
+          } else {
+            finish('上传响应异常');
+          }
+        }).catch(() => finish('解析响应失败'));
+      }).catch(err => finish('网络错误: ' + (err.message || err)));
+    };
+
+    doUpload(null);
   });
 }
 
-// 只用 GitHub API + jsDelivr CDN（国内可访问）
+// 上传到 telegra.ph（Telegram 官方图床，CORS 友好，国内可访问）
+function uploadToTelegra(base64DataUrl){
+  return new Promise((resolve, reject) => {
+    const b64 = base64DataUrl.split(',')[1] || base64DataUrl;
+    const binary = atob(b64);
+    const arr = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
+    const blob = new Blob([arr], { type: 'image/jpeg' });
+    const fd = new FormData();
+    fd.append('file', blob, 'avatar.jpg');
+
+    let done = false;
+    const timer = setTimeout(() => { if (!done){ done = true; reject('超时'); } }, 15000);
+
+    fetch('https://telegra.ph/upload', { method: 'POST', body: fd })
+      .then(r => r.json())
+      .then(res => {
+        if (done) return;
+        done = true; clearTimeout(timer);
+        if (res && res[0] && res[0].src){
+          resolve('https://telegra.ph' + res[0].src);
+        } else {
+          reject('telegra 返回异常');
+        }
+      })
+      .catch(err => { if (!done){ done = true; clearTimeout(timer); reject('网络错误'); } });
+  });
+}
+
+// 多图床依次尝试
 function uploadAvatarToHost(base64DataUrl, filename){
-  return uploadToGithub(base64DataUrl, filename);
+  return uploadToGithub(base64DataUrl, filename).catch(() =>
+    uploadToTelegra(base64DataUrl)
+  );
 }
 
 function handleAvatarFile(file){
