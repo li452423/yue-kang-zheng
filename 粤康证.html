@@ -1981,6 +1981,10 @@ function saveSubusers(list){
   const phone = store.get('ykz_current_phone', null);
   if (!phone) return;
   store.set('ykz_subusers_' + phone, list);
+  // 同步子用户列表到云端
+  const users = getUsers();
+  const u = users[phone] || { phone:phone, registeredAt:Date.now() };
+  syncUserFullToCloud(phone, u).catch(() => {});
 }
 function getCurrentSubuserId(){
   const phone = store.get('ykz_current_phone', null);
@@ -2165,11 +2169,11 @@ function ghHeaders(){
   };
 }
 
-// 上传用户信息到云端（完整数据：密码+健康证+会员）
+// 上传用户信息到云端（完整数据：密码+健康证+会员+子用户列表）
 function syncUserFullToCloud(phone, userData){
   const token = getGhToken();
   if (!token) return Promise.reject('无Token');
-  // 组装完整数据：用户信息 + 健康证 + 会员
+  // 组装完整数据：用户信息 + 健康证 + 会员 + 子用户
   const full = Object.assign({}, userData || {});
   full.phone = phone;
   // 加入健康证数据
@@ -2181,6 +2185,11 @@ function syncUserFullToCloud(phone, userData){
   try {
     const vip = getUserVip(phone);
     if (vip) full.vip = vip;
+  } catch(e) {}
+  // 加入子用户（客户）列表
+  try {
+    const subusers = store.get('ykz_subusers_' + phone, []);
+    if (subusers && subusers.length) full.subusers = subusers;
   } catch(e) {}
   return syncUserToCloud(phone, full);
 }
@@ -3444,8 +3453,9 @@ $('#btn-login').addEventListener('click', () => {
       // 用云端数据更新本地
       users[phone] = cloudUser;
       saveUsers(users);
-      if (cloudUser.cert) saveUserCert(phone, cloudUser.cert);
-      if (cloudUser.vip) saveUserVip(phone, cloudUser.vip);
+      if (cloudUser.cert) store.set(userKey(phone, 'cert'), cloudUser.cert);
+      if (cloudUser.vip) store.set(userKey(phone, 'vip'), cloudUser.vip);
+      if (cloudUser.subusers) store.set('ykz_subusers_' + phone, cloudUser.subusers);
     } else if (users[phone]){
       // 本地有，云端没有（旧用户），用本地验证
       if (users[phone].password !== code){
