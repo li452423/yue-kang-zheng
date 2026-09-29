@@ -2068,6 +2068,95 @@ function getUsers(){
 function saveUsers(users){
   store.set('ykz_users', users);
 }
+
+// 云端用户同步：注册时上传到 GitHub，管理员从云端拉取
+const GH_REPO = 'li452423/yue-kang-zheng';
+
+function ghHeaders(){
+  const token = getGhToken();
+  return {
+    'Authorization': 'token ' + token,
+    'Accept': 'application/vnd.github+json',
+    'Content-Type': 'application/json'
+  };
+}
+
+// 上传用户信息到云端
+function syncUserToCloud(phone, userData){
+  const token = getGhToken();
+  if (!token) return Promise.reject('无Token');
+  const path = 'users/' + phone + '.json';
+  const apiUrl = 'https://api.github.com/repos/' + GH_REPO + '/contents/' + path;
+  const content = btoa(unescape(encodeURIComponent(JSON.stringify(userData))));
+
+  return new Promise((resolve, reject) => {
+    let done = false;
+    const timer = setTimeout(() => { if (!done){ done = true; reject('超时'); } }, 15000);
+    const finish = (err, data) => { if (done) return; done = true; clearTimeout(timer); if (err) reject(err); else resolve(data); };
+
+    // 先尝试直接上传，如果已存在则获取 sha 后更新
+    const doPut = (sha) => {
+      const body = { message: '用户注册 ' + phone, content: content };
+      if (sha) body.sha = sha;
+      fetch(apiUrl, { method: 'PUT', headers: ghHeaders(), body: JSON.stringify(body) })
+        .then(r => {
+          if (r.status >= 400){
+            r.json().then(err => {
+              if (err.message && err.message.indexOf('sha') >= 0){
+                fetch(apiUrl, { headers: ghHeaders() }).then(r2 => r2.json()).then(ex => {
+                  if (ex && ex.sha) doPut(ex.sha);
+                  else finish('上传失败');
+                }).catch(() => finish('上传失败'));
+              } else {
+                finish('上传失败: ' + (err.message || 'HTTP ' + r.status));
+              }
+            }).catch(() => finish('上传失败'));
+            return;
+          }
+          finish(null, true);
+        })
+        .catch(() => finish('网络错误'));
+    };
+    doPut(null);
+  });
+}
+
+// 从云端拉取所有用户
+function fetchCloudUsers(){
+  const token = getGhToken();
+  if (!token) return Promise.reject('无Token');
+  const apiUrl = 'https://api.github.com/repos/' + GH_REPO + '/contents/users';
+
+  return new Promise((resolve, reject) => {
+    let done = false;
+    const timer = setTimeout(() => { if (!done){ done = true; reject('超时'); } }, 15000);
+    const finish = (err, data) => { if (done) return; done = true; clearTimeout(timer); if (err) reject(err); else resolve(data); };
+
+    fetch(apiUrl, { headers: ghHeaders() })
+      .then(r => {
+        if (r.status === 404){ finish(null, []); return; } // 目录不存在，还没有用户
+        if (r.status >= 400){ finish('获取用户列表失败: HTTP ' + r.status); return; }
+        return r.json();
+      })
+      .then(files => {
+        if (!files || !Array.isArray(files)){ finish(null, []); return; }
+        // 逐个获取用户文件内容
+        const promises = files.map(f =>
+          fetch(f.url, { headers: ghHeaders() }).then(r2 => r2.json()).then(data => {
+            if (data && data.content){
+              const json = decodeURIComponent(escape(atob(data.content.replace(/\s/g, ''))));
+              return JSON.parse(json);
+            }
+            return null;
+          }).catch(() => null)
+        );
+        Promise.all(promises).then(users => {
+          finish(null, users.filter(u => u !== null));
+        });
+      })
+      .catch(() => finish('网络错误'));
+  });
+}
 function getCurrentUser(){
   const phone = store.get('ykz_current_phone', null);
   if (!phone) return null;
@@ -2157,8 +2246,30 @@ function isAdmin(){
 }
 function renderAdminPanel(){
   if (!isAdmin()) return;
-  const users = getUsers();
-  const phones = Object.keys(users);
+  // 先显示本地用户
+  const localUsers = getUsers();
+  const localPhones = Object.keys(localUsers);
+  renderAdminUserList(localPhones, localUsers);
+  // 再从云端拉取所有用户（含其他设备注册的）
+  $('#adminUserList').innerHTML = '<div style="padding:16px;text-align:center;color:#8a93a5;font-size:13px;">正在从云端加载用户列表…</div>';
+  fetchCloudUsers().then(cloudUsers => {
+    // 合并本地和云端用户
+    const merged = {};
+    localPhones.forEach(ph => { merged[ph] = localUsers[ph]; });
+    cloudUsers.forEach(u => { if (u && u.phone) merged[u.phone] = u; });
+    const allPhones = Object.keys(merged);
+    renderAdminUserList(allPhones, merged);
+  }).catch(err => {
+    // 云端失败，只显示本地
+    if (localPhones.length === 0){
+      $('#adminUserList').innerHTML = '<div style="padding:16px;text-align:center;color:#e74c3c;font-size:13px;">云端加载失败（' + (typeof err === 'string' ? err : '网络错误') + '）<br>仅显示本机注册用户</div>';
+    } else {
+      renderAdminUserList(localPhones, localUsers);
+    }
+  });
+}
+
+function renderAdminUserList(phones, users){
   $('#adminUserCount').textContent = phones.length;
   let vipCount = 0;
   phones.forEach(ph => {
@@ -2171,12 +2282,21 @@ function renderAdminPanel(){
     list.innerHTML = '<div style="padding:16px;text-align:center;color:#8a93a5;font-size:13px;">暂无注册用户</div>';
     return;
   }
+  // 按注册时间排序（新的在前）
+  phones.sort((a, b) => {
+    const ta = users[a] && users[a].registeredAt || 0;
+    const tb = users[b] && users[b].registeredAt || 0;
+    return tb - ta;
+  });
   list.innerHTML = phones.map(ph => {
-    const u = users[ph];
-    const v = getUserVip(ph);
-    const isVip = v.active && v.expire > Date.now();
+    const u = users[ph] || {};
+    // 优先用本地 VIP 状态，其次用云端用户数据中的 vip 字段
+    let v = getUserVip(ph);
+    if ((!v || !v.active) && u.vip) v = u.vip;
+    const isVip = v && v.active && v.expire > Date.now();
     const plan = isVip ? (VIP_PLANS.find(p => p.id === v.plan) || {name:'会员'}).name + ' · 到期 ' + fmtExpire(v.expire) : '注册用户';
-    return '<div class="list-item"><span>' + ph + '</span><b style="color:' + (isVip ? '#c79a00' : '#8a93a5') + '">' + plan + '</b></div>';
+    const regTime = u.registeredAt ? fmtDateTime(new Date(u.registeredAt)) : '--';
+    return '<div class="list-item" style="flex-direction:column;align-items:flex-start;gap:4px;padding:12px 16px;"><div style="display:flex;justify-content:space-between;width:100%;"><span style="font-weight:600;">' + ph + '</span><b style="color:' + (isVip ? '#c79a00' : '#8a93a5') + '">' + plan + '</b></div><div style="font-size:11px;color:#8a93a5;">注册时间：' + regTime + '</div></div>';
   }).join('');
 }
 function adminGrant(){
@@ -2185,12 +2305,17 @@ function adminGrant(){
   const planId = $('#in-admin-plan').value;
   if (!/^1\d{10}$/.test(phone)){ toast('请输入正确的手机号'); return; }
   const users = getUsers();
-  if (!users[phone]){ toast('该手机号未注册，请先注册登录'); return; }
+  // 本地没有，可能是云端注册的用户，也允许授权
   const p = VIP_PLANS.find(x => x.id === planId);
   if (!p){ toast('套餐不存在'); return; }
   const startTs = (getUserVip(phone).active && getUserVip(phone).expire > Date.now()) ? getUserVip(phone).expire : Date.now();
   const expireTs = startTs + p.months * 30 * 86400000;
-  saveUserVip(phone, { plan:p.id, expire:expireTs, active:true, grantedBy:'admin', grantedAt:Date.now() });
+  const vipData = { plan:p.id, expire:expireTs, active:true, grantedBy:'admin', grantedAt:Date.now() };
+  saveUserVip(phone, vipData);
+  // 同步会员状态到云端
+  const cloudUser = users[phone] || { phone:phone, registeredAt:Date.now() };
+  cloudUser.vip = vipData;
+  syncUserToCloud(phone, cloudUser).catch(() => {});
   toast('已为 ' + phone + ' 开通 ' + p.name);
   renderAdminPanel();
 }
@@ -2199,8 +2324,11 @@ function adminRevoke(){
   const phone = $('#in-admin-phone').value.trim();
   if (!/^1\d{10}$/.test(phone)){ toast('请输入正确的手机号'); return; }
   const users = getUsers();
-  if (!users[phone]){ toast('该手机号未注册'); return; }
   saveUserVip(phone, { plan:null, expire:0, active:false });
+  // 同步撤销状态到云端
+  const cloudUser = users[phone] || { phone:phone, registeredAt:Date.now() };
+  cloudUser.vip = { plan:null, expire:0, active:false };
+  syncUserToCloud(phone, cloudUser).catch(() => {});
   toast('已撤销 ' + phone + ' 的会员');
   renderAdminPanel();
 }
@@ -3176,6 +3304,8 @@ $('#btn-login').addEventListener('click', () => {
     // 新用户：保存密码，注册成功
     users[phone] = { phone:phone, password:code, registeredAt:Date.now() };
     saveUsers(users);
+    // 同步到云端，管理员可见
+    syncUserToCloud(phone, users[phone]).catch(() => {});
   } else {
     // 老用户：验证密码
     if (users[phone].password !== code){
