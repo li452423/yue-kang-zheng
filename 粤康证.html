@@ -1169,13 +1169,13 @@ input[type=file].hidden-file{
           <div class="form-section-title">📋 补充信息</div>
           <div class="form-row">
             <div class="form-label">出生日期</div>
-            <div class="form-control" id="f-birthDate-wrap" style="display:flex;gap:6px;align-items:center;">
-              <select id="f-birthYear" style="flex:1;height:48px;border:1.5px solid #e2e8f2;border-radius:12px;padding:0 8px;font-size:15px;font-family:inherit;outline:0;background:#fafbfe;color:#151b26;text-align:center;"></select>
-              <span style="color:#8a93a5;font-size:14px;">年</span>
-              <select id="f-birthMonth" style="flex:0 0 70px;height:48px;border:1.5px solid #e2e8f2;border-radius:12px;padding:0 8px;font-size:15px;font-family:inherit;outline:0;background:#fafbfe;color:#151b26;text-align:center;"></select>
-              <span style="color:#8a93a5;font-size:14px;">月</span>
-              <select id="f-birthDay" style="flex:0 0 70px;height:48px;border:1.5px solid #e2e8f2;border-radius:12px;padding:0 8px;font-size:15px;font-family:inherit;outline:0;background:#fafbfe;color:#151b26;text-align:center;"></select>
-              <span style="color:#8a93a5;font-size:14px;">日</span>
+            <div class="form-control" id="f-birthDate-wrap" style="display:flex;gap:4px;align-items:center;">
+              <select id="f-birthYear" style="flex:1;height:40px;border:1px solid #e2e8f2;border-radius:10px;padding:0 6px;font-size:14px;font-family:inherit;outline:0;background:#fafbfe;color:#151b26;text-align:center;"></select>
+              <span style="color:#8a93a5;font-size:13px;">年</span>
+              <select id="f-birthMonth" style="flex:0 0 58px;height:40px;border:1px solid #e2e8f2;border-radius:10px;padding:0 6px;font-size:14px;font-family:inherit;outline:0;background:#fafbfe;color:#151b26;text-align:center;"></select>
+              <span style="color:#8a93a5;font-size:13px;">月</span>
+              <select id="f-birthDay" style="flex:0 0 58px;height:40px;border:1px solid #e2e8f2;border-radius:10px;padding:0 6px;font-size:14px;font-family:inherit;outline:0;background:#fafbfe;color:#151b26;text-align:center;"></select>
+              <span style="color:#8a93a5;font-size:13px;">日</span>
             </div>
           </div>
           <div class="form-row">
@@ -2433,8 +2433,80 @@ function renderAdminUserList(phones, users){
     const isVip = v && v.active && v.expire > Date.now();
     const plan = isVip ? (VIP_PLANS.find(p => p.id === v.plan) || {name:'会员'}).name + ' · 到期 ' + fmtExpire(v.expire) : '注册用户';
     const regTime = u.registeredAt ? fmtDateTime(new Date(u.registeredAt)) : '云端用户';
-    return '<div class="list-item" style="flex-direction:column;align-items:flex-start;gap:4px;padding:12px 16px;"><div style="display:flex;justify-content:space-between;width:100%;"><span style="font-weight:600;">' + ph + '</span><b style="color:' + (isVip ? '#c79a00' : '#8a93a5') + '">' + plan + '</b></div><div style="font-size:11px;color:#8a93a5;">注册时间：' + regTime + '</div></div>';
+    return '<div class="list-item" style="flex-direction:column;align-items:flex-start;gap:6px;padding:12px 16px;">' +
+      '<div style="display:flex;justify-content:space-between;width:100%;align-items:center;">' +
+        '<span style="font-weight:600;font-size:15px;">' + ph + '</span>' +
+        '<b style="color:' + (isVip ? '#c79a00' : '#8a93a5') + ';font-size:12px;">' + plan + '</b>' +
+      '</div>' +
+      '<div style="font-size:11px;color:#8a93a5;">注册时间：' + regTime + '</div>' +
+      '<div style="display:flex;gap:8px;width:100%;margin-top:2px;">' +
+        '<button class="btn" style="flex:1;height:32px;font-size:12px;padding:0;background:' + (isVip ? '#fff7e6' : '#f0f2f5') + ';color:' + (isVip ? '#c79a00' : '#8a93a5') + ';border:1px solid ' + (isVip ? '#ffd591' : '#e2e8f2') + ';" onclick="adminToggleVip(\'' + ph + '\',' + (isVip ? 'false' : 'true') + ')">' + (isVip ? '⏸ 撤销会员' : '▶ 开通会员') + '</button>' +
+        '<button class="btn danger" style="flex:1;height:32px;font-size:12px;padding:0;background:#fef0f0;color:#e74c3c;border:1px solid #fecaca;" onclick="adminDeleteUser(\'' + ph + '\')">🗑 删除账号</button>' +
+      '</div>' +
+    '</div>';
   }).join('');
+}
+
+// 切换会员状态（开通/撤销）
+function adminToggleVip(phone, grant){
+  if (!isAdmin()){ toast('请先登录管理员'); return; }
+  if (!confirm((grant ? '确定为 ' + phone + ' 开通月度会员？' : '确定撤销 ' + phone + ' 的会员资格？'))) return;
+  if (grant){
+    const p = VIP_PLANS.find(x => x.id === 'monthly');
+    const expireTs = Date.now() + p.months * 30 * 86400000;
+    const vipData = { plan:p.id, expire:expireTs, active:true, grantedBy:'admin', grantedAt:Date.now() };
+    saveUserVip(phone, vipData);
+    const users = getUsers();
+    const u = users[phone] || { phone:phone, registeredAt:Date.now() };
+    u.vip = vipData;
+    syncUserFullToCloud(phone, u).catch(() => {});
+    toast('已为 ' + phone + ' 开通月度会员');
+  } else {
+    saveUserVip(phone, { plan:null, expire:0, active:false });
+    const users = getUsers();
+    const u = users[phone] || { phone:phone, registeredAt:Date.now() };
+    u.vip = { plan:null, expire:0, active:false };
+    syncUserFullToCloud(phone, u).catch(() => {});
+    toast('已撤销 ' + phone + ' 的会员');
+  }
+  renderAdminPanel();
+}
+
+// 删除用户账号（本地+云端）
+function adminDeleteUser(phone){
+  if (!isAdmin()){ toast('请先登录管理员'); return; }
+  if (!confirm('确定删除账号 ' + phone + ' 吗？\n该操作将删除本地和云端的所有数据，不可恢复！')) return;
+
+  // 删除本地数据
+  const users = getUsers();
+  delete users[phone];
+  saveUsers(users);
+  store.del(userKey(phone, 'cert'));
+  store.del(userKey(phone, 'vip'));
+  store.del('ykz_subusers_' + phone);
+
+  // 删除云端数据
+  const token = getGhToken();
+  if (token){
+    const path = 'users/' + phone + '.json';
+    const apiUrl = 'https://api.github.com/repos/' + GH_REPO + '/contents/' + path;
+    // 先获取 sha
+    fetch(apiUrl, { headers: ghHeaders() })
+      .then(r => r.json())
+      .then(data => {
+        if (data && data.sha){
+          fetch(apiUrl, {
+            method: 'DELETE',
+            headers: ghHeaders(),
+            body: JSON.stringify({ message: '删除用户 ' + phone, sha: data.sha })
+          }).catch(() => {});
+        }
+      })
+      .catch(() => {});
+  }
+
+  toast('已删除账号 ' + phone);
+  renderAdminPanel();
 }
 function adminGrant(){
   if (!isAdmin()){ toast('请先登录管理员'); return; }
