@@ -3441,35 +3441,47 @@ $('#btn-login').addEventListener('click', () => {
   // 先从云端拉取该用户数据
   fetchCloudUser(phone).then(cloudUser => {
     const users = getUsers();
-    const isNew = !users[phone] && !cloudUser;
+    const localUser = users[phone] || null;
+    const isNew = !localUser && !cloudUser;
 
-    if (cloudUser){
-      // 云端有数据，用云端验证密码
-      if (cloudUser.password !== code){
-        toast('密码错误，请重新输入');
-        btn.disabled = false; btn.textContent = '登录';
-        return;
-      }
-      // 用云端数据更新本地
-      users[phone] = cloudUser;
-      saveUsers(users);
-      if (cloudUser.cert) store.set(userKey(phone, 'cert'), cloudUser.cert);
-      if (cloudUser.vip) store.set(userKey(phone, 'vip'), cloudUser.vip);
-      if (cloudUser.subusers) store.set('ykz_subusers_' + phone, cloudUser.subusers);
-    } else if (users[phone]){
-      // 本地有，云端没有（旧用户），用本地验证
-      if (users[phone].password !== code){
-        toast('密码错误，请重新输入');
-        btn.disabled = false; btn.textContent = '登录';
-        return;
-      }
-      // 同步到云端
-      syncUserFullToCloud(phone, users[phone]).catch(() => {});
-    } else {
-      // 全新用户
-      users[phone] = { phone:phone, password:code, registeredAt:Date.now() };
-      saveUsers(users);
-      syncUserFullToCloud(phone, users[phone]).catch(() => {});
+    // 验证密码
+    const correctPwd = cloudUser ? cloudUser.password : (localUser ? localUser.password : code);
+    if (correctPwd !== code){
+      toast('密码错误，请重新输入');
+      btn.disabled = false; btn.textContent = '登录';
+      return;
+    }
+
+    // 智能合并：本地和云端取数据更完整的
+    const localCert = store.get(userKey(phone, 'cert'), null);
+    const localVip = store.get(userKey(phone, 'vip'), null);
+    const localSubusers = store.get('ykz_subusers_' + phone, []);
+
+    // 合并用户基础信息
+    const mergedUser = Object.assign({}, localUser || {}, cloudUser || {});
+    mergedUser.phone = phone;
+    mergedUser.password = code;
+    if (!mergedUser.registeredAt) mergedUser.registeredAt = Date.now();
+    users[phone] = mergedUser;
+    saveUsers(users);
+
+    // 健康证：云端有就用云端，否则用本地
+    if (cloudUser && cloudUser.cert){
+      store.set(userKey(phone, 'cert'), cloudUser.cert);
+    }
+    // 会员：云端有就用云端
+    if (cloudUser && cloudUser.vip && cloudUser.vip.active){
+      store.set(userKey(phone, 'vip'), cloudUser.vip);
+    }
+    // 子用户：云端有就用云端
+    if (cloudUser && cloudUser.subusers && cloudUser.subusers.length){
+      store.set('ykz_subusers_' + phone, cloudUser.subusers);
+    }
+
+    // 如果本地有但云端没有的，同步到云端
+    const needSync = !cloudUser || !cloudUser.cert || !cloudUser.vip || !cloudUser.subusers;
+    if (needSync){
+      syncUserFullToCloud(phone, mergedUser).catch(() => {});
     }
 
     setCurrentUser(phone);
