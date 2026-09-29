@@ -1166,7 +1166,14 @@ input[type=file].hidden-file{
           <div class="form-section-title">📋 补充信息</div>
           <div class="form-row">
             <div class="form-label">出生日期</div>
-            <div class="form-control"><input class="form-input" id="f-birthDate" type="date"></div>
+            <div class="form-control" id="f-birthDate-wrap" style="display:flex;gap:6px;align-items:center;">
+              <select id="f-birthYear" style="flex:1;height:48px;border:1.5px solid #e2e8f2;border-radius:12px;padding:0 8px;font-size:15px;font-family:inherit;outline:0;background:#fafbfe;color:#151b26;text-align:center;"></select>
+              <span style="color:#8a93a5;font-size:14px;">年</span>
+              <select id="f-birthMonth" style="flex:0 0 70px;height:48px;border:1.5px solid #e2e8f2;border-radius:12px;padding:0 8px;font-size:15px;font-family:inherit;outline:0;background:#fafbfe;color:#151b26;text-align:center;"></select>
+              <span style="color:#8a93a5;font-size:14px;">月</span>
+              <select id="f-birthDay" style="flex:0 0 70px;height:48px;border:1.5px solid #e2e8f2;border-radius:12px;padding:0 8px;font-size:15px;font-family:inherit;outline:0;background:#fafbfe;color:#151b26;text-align:center;"></select>
+              <span style="color:#8a93a5;font-size:14px;">日</span>
+            </div>
           </div>
           <div class="form-row">
             <div class="form-label">民　族</div>
@@ -1492,12 +1499,77 @@ function resetCert(){
   toast('已重新生成证照数据');
 }
 
+/* ---------- 出生日期年/月/日快速选择 ---------- */
+function initBirthDatePickers(){
+  const yearSel = $('#f-birthYear');
+  const monthSel = $('#f-birthMonth');
+  const daySel = $('#f-birthDay');
+
+  // 只初始化一次
+  if (yearSel.children.length > 0) return;
+
+  // 年份：1930 ~ 当前年份
+  const curYear = new Date().getFullYear();
+  let yearHtml = '<option value="">年</option>';
+  for (let y = curYear; y >= 1930; y--){
+    yearHtml += '<option value="' + y + '">' + y + '</option>';
+  }
+  yearSel.innerHTML = yearHtml;
+
+  // 月份：1~12
+  let monHtml = '<option value="">月</option>';
+  for (let m = 1; m <= 12; m++){
+    monHtml += '<option value="' + m + '">' + m + '</option>';
+  }
+  monthSel.innerHTML = monHtml;
+
+  // 日：先填 31，选了年月后动态更新
+  daySel.innerHTML = '<option value="">日</option>';
+
+  // 年/月变化时更新日列表
+  yearSel.onchange = updateBirthDays;
+  monthSel.onchange = updateBirthDays;
+}
+
+function updateBirthDays(){
+  const yearSel = $('#f-birthYear');
+  const monthSel = $('#f-birthMonth');
+  const daySel = $('#f-birthDay');
+  const y = parseInt(yearSel.value);
+  const m = parseInt(monthSel.value);
+  if (!y || !m){
+    daySel.innerHTML = '<option value="">日</option>';
+    return;
+  }
+  // 计算该月天数
+  const days = new Date(y, m, 0).getDate();
+  const oldDay = parseInt(daySel.value) || 0;
+  let dayHtml = '<option value="">日</option>';
+  for (let d = 1; d <= days; d++){
+    dayHtml += '<option value="' + d + '">' + d + '</option>';
+  }
+  daySel.innerHTML = dayHtml;
+  // 尽量保持已选的日
+  if (oldDay && oldDay <= days) daySel.value = oldDay;
+}
+
 /* ---------- 编辑资料表单 ---------- */
 function fillEditForm(){
   const c = getCert();
   $('#f-name').value         = c.name || '';
   $('#f-gender').value      = c.gender || '男';
   $('#f-birthDate').value   = c.birthDate || '';
+  // 出生日期用年/月/日下拉
+  initBirthDatePickers();
+  if (c.birthDate){
+    const parts = c.birthDate.split('-');
+    if (parts.length === 3){
+      $('#f-birthYear').value = parts[0];
+      $('#f-birthMonth').value = parts[1].replace(/^0/, '');
+      updateBirthDays();
+      $('#f-birthDay').value = parts[2].replace(/^0/, '');
+    }
+  }
   $('#f-ethnicity').value   = c.ethnicity || '';
   $('#f-idCard').value      = c.idCard || '';
   $('#f-phone').value       = c.phone || '';
@@ -1537,8 +1609,17 @@ function saveEditForm(){
     toast('手机号格式有误（11 位）'); return;
   }
 
+  // 从年/月/日下拉框组装出生日期
+  const birthYear = $('#f-birthYear').value;
+  const birthMonth = $('#f-birthMonth').value;
+  const birthDay = $('#f-birthDay').value;
+  let bd = '';
+  if (birthYear && birthMonth && birthDay){
+    bd = birthYear + '-' + birthMonth.padStart(2, '0') + '-' + birthDay.padStart(2, '0');
+  }
+  $('#f-birthDate').value = bd;
+
   // 计算年龄
-  const bd = $('#f-birthDate').value;
   let age = c.age;
   if (bd){
     const d = new Date(bd);
