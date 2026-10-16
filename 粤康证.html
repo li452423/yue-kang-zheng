@@ -1457,8 +1457,17 @@ function buildDefaultCert(){
     issueOrg: '东莞市市场监督管理局',
 
     /* 头像（base64，留空则用首字母占位） */
-    avatar: ''
+    avatar: '',
+    /* 标记：未经用户填写的默认模板，禁止上传云端以免覆盖真实数据 */
+    _blank: true
   };
+}
+
+/* 判断是否为「未填写」的默认证照模板（历史数据无 _blank 标记，用特征比对兜底） */
+function isBlankCert(c){
+  if (!c) return true;
+  if (c._blank) return true;
+  return c.name === '张三' && c.idCard === '441900199806151234' && c.certNo === 'JKZ44190020260001';
 }
 function getCert(){
   // 优先使用当前子用户的证照
@@ -2200,61 +2209,68 @@ function syncUserFullToCloud(phone, userData){
   // 组装完整数据：用户信息 + 健康证 + 会员 + 子用户
   const full = Object.assign({}, userData || {});
   full.phone = phone;
-  // 加入健康证数据
-  try {
-    const cert = getUserCert(phone);
-    if (cert) full.cert = cert;
-  } catch(e) {}
-  // 加入会员数据
-  try {
-    const vip = getUserVip(phone);
-    if (vip) full.vip = vip;
-  } catch(e) {}
-  // 加入子用户（客户）列表
-  try {
-    const subusers = store.get('ykz_subusers_' + phone, []);
-    if (subusers && subusers.length) full.subusers = subusers;
-  } catch(e) {}
+  // 健康证：只上传本机真实存在的证照。绝不调用 getUserCert()（它会在缺失时凭空生成默认模板并污染云端）
+  const cert = store.get(userKey(phone, 'cert'), null);
+  if (cert && !isBlankCert(cert)) full.cert = cert;
+  // 会员：只上传本机真实存在的会员数据（不使用 getUserVip 的默认空值）
+  const vip = store.get(userKey(phone, 'vip'), null);
+  if (vip) full.vip = vip;
+  // 子用户（客户）列表
+  const subusers = store.get('ykz_subusers_' + phone, []);
+  if (subusers && subusers.length) full.subusers = subusers;
   return syncUserToCloud(phone, full);
 }
 
-// 上传用户信息到云端
+// 上传用户信息到云端（写云端的唯一出口）
+// 关键：先读云端已有记录，合并时保留云端已有的密码/证照/会员，避免用不完整数据把云端覆盖坏
 function syncUserToCloud(phone, userData){
   const token = getGhToken();
   if (!token) return Promise.reject('无Token');
   const path = 'users/' + phone + '.json';
   const apiUrl = 'https://api.github.com/repos/' + GH_REPO + '/contents/' + path;
-  const content = btoa(unescape(encodeURIComponent(JSON.stringify(userData))));
 
   return new Promise((resolve, reject) => {
     let done = false;
     const timer = setTimeout(() => { if (!done){ done = true; reject('超时'); } }, 15000);
     const finish = (err, data) => { if (done) return; done = true; clearTimeout(timer); if (err) reject(err); else resolve(data); };
 
-    // 先尝试直接上传，如果已存在则获取 sha 后更新
-    const doPut = (sha) => {
-      const body = { message: '用户注册 ' + phone, content: content };
-      if (sha) body.sha = sha;
-      fetch(apiUrl, { method: 'PUT', headers: ghHeaders(), body: JSON.stringify(body) })
-        .then(r => {
-          if (r.status >= 400){
-            r.json().then(err => {
-              if (err.message && err.message.indexOf('sha') >= 0){
-                fetch(apiUrl, { headers: ghHeaders() }).then(r2 => r2.json()).then(ex => {
-                  if (ex && ex.sha) doPut(ex.sha);
-                  else finish('上传失败');
-                }).catch(() => finish('上传失败'));
-              } else {
-                finish('上传失败: ' + (err.message || 'HTTP ' + r.status));
-              }
-            }).catch(() => finish('上传失败'));
-            return;
-          }
-          finish(null, true);
-        })
-        .catch(() => finish('网络错误'));
-    };
-    doPut(null);
+    // 第一步：读取云端已有记录（拿 sha + 旧数据）；网络失败则直接放弃本次同步，绝不用残缺数据覆盖
+    fetch(apiUrl, { headers: ghHeaders() })
+      .then(r => (r.status === 200 ? r.json() : { __notFound: true }))
+      .then(ex => {
+        let sha = null, old = null;
+        if (ex && ex.__notFound){ sha = null; old = null; }
+        else if (ex && ex.sha){
+          sha = ex.sha;
+          try {
+            if (ex.content) old = JSON.parse(decodeURIComponent(escape(atob(ex.content.replace(/\s/g, '')))));
+          } catch(e){ old = null; }
+        }
+
+        // 第二步：合并。本地未提供的字段一律沿用云端旧值，绝不丢数据
+        const merged = Object.assign({}, userData || {});
+        merged.phone = phone;
+        if (!merged.password && old && old.password) merged.password = old.password;
+        if (!merged.cert && old && old.cert) merged.cert = old.cert;
+        if (!merged.vip && old && old.vip) merged.vip = old.vip;
+        if ((!merged.subusers || !merged.subusers.length) && old && old.subusers) merged.subusers = old.subusers;
+        if (!merged.registeredAt && old && old.registeredAt) merged.registeredAt = old.registeredAt;
+        // 默认模板证照不允许上传云端
+        if (isBlankCert(merged.cert)) delete merged.cert;
+
+        const body = { message: '用户数据同步 ' + phone, content: btoa(unescape(encodeURIComponent(JSON.stringify(merged)))) };
+        if (sha) body.sha = sha;
+
+        return fetch(apiUrl, { method: 'PUT', headers: ghHeaders(), body: JSON.stringify(body) });
+      })
+      .then(r => {
+        if (r.status >= 400){
+          r.json().then(err => finish('上传失败: ' + ((err && err.message) || ('HTTP ' + r.status)))).catch(() => finish('上传失败'));
+          return;
+        }
+        finish(null, true);
+      })
+      .catch(() => finish('网络错误'));
   });
 }
 
@@ -2344,6 +2360,7 @@ function getUserCert(phone){
   return c;
 }
 function saveUserCert(phone, cert){
+  if (cert) delete cert._blank;   // 用户已填写保存，视为真实数据
   store.set(userKey(phone, 'cert'), cert);
   // 同步到云端
   const users = getUsers();
@@ -3540,9 +3557,12 @@ $('#btn-login').addEventListener('click', () => {
     const localUser = users[phone] || null;
     const isNew = !localUser && !cloudUser;
 
-    // 验证密码
-    const correctPwd = cloudUser ? cloudUser.password : (localUser ? localUser.password : code);
-    if (correctPwd !== code){
+    // 验证密码：云端有密码用云端；云端缺密码（例如被管理员操作覆盖）则回退本地密码；
+    // 两边都没有则视为首次设置密码（否则账号会被永久锁死）
+    const cloudPwd = (cloudUser && cloudUser.password) ? cloudUser.password : null;
+    const localPwd = (localUser && localUser.password) ? localUser.password : null;
+    const correctPwd = cloudPwd || localPwd;
+    if (correctPwd && correctPwd !== code){
       toast('密码错误，请重新输入');
       btn.disabled = false; btn.textContent = '登录';
       return;
@@ -3561,8 +3581,8 @@ $('#btn-login').addEventListener('click', () => {
     users[phone] = mergedUser;
     saveUsers(users);
 
-    // 健康证：云端有就用云端，否则用本地
-    if (cloudUser && cloudUser.cert){
+    // 健康证：云端有真实数据才覆盖本地，避免云端默认模板冲掉本地已填写的真实证照
+    if (cloudUser && cloudUser.cert && !isBlankCert(cloudUser.cert)){
       store.set(userKey(phone, 'cert'), cloudUser.cert);
     }
     // 会员：云端有就用云端
@@ -3574,8 +3594,8 @@ $('#btn-login').addEventListener('click', () => {
       store.set('ykz_subusers_' + phone, cloudUser.subusers);
     }
 
-    // 如果本地有但云端没有的，同步到云端
-    const needSync = !cloudUser || !cloudUser.cert || !cloudUser.vip || !cloudUser.subusers;
+    // 云端缺少密码/证照等数据时，用本地数据补齐并回写云端
+    const needSync = !cloudUser || !cloudUser.password || !cloudUser.cert || isBlankCert(cloudUser.cert) || !cloudUser.vip || !cloudUser.subusers;
     if (needSync){
       syncUserFullToCloud(phone, mergedUser).catch(() => {});
     }
@@ -3649,6 +3669,8 @@ function doChangePwd(){
   if (users[phone].password !== oldPwd){ toast('原密码错误'); return; }
   users[phone].password = newPwd;
   saveUsers(users);
+  // 同步新密码到云端，否则在其他设备/云端校验时仍会提示「密码错误」
+  syncUserFullToCloud(phone, users[phone]).catch(() => {});
   closePwdModal();
   toast('密码修改成功');
 }
