@@ -1466,6 +1466,8 @@ function buildDefaultCert(){
 /* 判断是否为「未填写」的默认证照模板（历史数据无 _blank 标记，用特征比对兜底） */
 function isBlankCert(c){
   if (!c) return true;
+  // 只要上传过头像/照片，就绝不是空白模板（哪怕姓名等仍是默认值）
+  if (c.avatar || c.avatarUrl || c.avatarTiny) return false;
   if (c._blank) return true;
   return c.name === '张三' && c.idCard === '441900199806151234' && c.certNo === 'JKZ44190020260001';
 }
