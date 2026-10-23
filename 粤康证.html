@@ -1959,6 +1959,7 @@ function verifyUrl(c){
     n: c.name,
     g: c.gender,
     i: c.idCard,
+    o: c.checkOrg,
     d: c.checkDate,
     a: av
   };
@@ -1980,8 +1981,8 @@ function showCertFromUrl(){
     $('#cv-name').textContent = d.n || d.name || '--';
     $('#cv-gender').textContent = d.g || d.gender || '--';
     $('#cv-idcard').textContent = d.i || d.idCard || '--';
-    // 体检单位：二维码不传（省空间给头像），显示默认体检单位
-    $('#cv-checkOrg').textContent = d.o || d.checkOrg || '东莞东城新世界福华健康门诊部';
+    // 体检单位：新版二维码已携带；旧二维码无此字段则显示 --
+    $('#cv-checkOrg').textContent = d.o || d.checkOrg || '--';
     $('#cv-checkDate').textContent = (d.d || d.checkDate || '--') + ' （有效期一年）';
     // 证件编号：二维码不传，用身份证号代替显示
     $('#cv-certNo').textContent = d.c || d.certNo || (d.i || d.idCard || '--');
