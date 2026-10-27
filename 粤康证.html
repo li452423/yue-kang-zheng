@@ -1699,7 +1699,8 @@ function saveEditForm(){
     avatarUrl: c.avatarUrl || '',
     avatarTiny: c.avatarTiny || '',
     _avatarHash: c._avatarHash || '',
-    _avatarId: c._avatarId || ''
+    _avatarId: c._avatarId || '',
+    _avatarHost: c._avatarHost || ''
   };
 
   saveCert(updated);
@@ -1822,6 +1823,7 @@ function uploadToGithub(base64DataUrl, filename){
     const b64 = base64DataUrl.split(',')[1] || base64DataUrl;
     const path = 'avatars/' + filename;
     const repo = 'li452423/yue-kang-zheng';
+    const branch = 'gh-pages'; // 与网页同源，微信里一定能访问
     const apiUrl = 'https://api.github.com/repos/' + repo + '/contents/' + path;
 
     // 超时控制：15秒
@@ -1839,7 +1841,7 @@ function uploadToGithub(base64DataUrl, filename){
 
     // 直接上传（不先检查，文件存在时 GitHub 会返回错误，我们带 sha 重试）
     const doUpload = (sha) => {
-      const body = { message: '上传健康证头像', content: b64 };
+      const body = { message: '上传健康证头像', content: b64, branch };
       if (sha) body.sha = sha;
       fetch(apiUrl, {
         method: 'PUT',
@@ -1855,7 +1857,7 @@ function uploadToGithub(base64DataUrl, filename){
           r.json().then(err => {
             // 如果是文件已存在冲突，先获取 sha 再重试
             if (err.message && err.message.indexOf('sha') >= 0){
-              fetch(apiUrl, { headers: { 'Authorization': 'token ' + token } }).then(r2 => r2.json()).then(ex => {
+              fetch(apiUrl + '?ref=' + branch, { headers: { 'Authorization': 'token ' + token } }).then(r2 => r2.json()).then(ex => {
                 if (ex && ex.sha) doUpload(ex.sha);
                 else finish('上传失败: ' + err.message);
               }).catch(e => finish('上传失败: ' + err.message));
@@ -1867,7 +1869,8 @@ function uploadToGithub(base64DataUrl, filename){
         }
         r.json().then(res => {
           if (res && res.content){
-            finish(null, 'https://cdn.jsdelivr.net/gh/' + repo + '/' + path);
+            // 与网页同源（GitHub Pages），不依赖 jsDelivr
+            finish(null, 'https://li452423.github.io/yue-kang-zheng/' + path);
           } else {
             finish('上传响应异常');
           }
@@ -1951,8 +1954,9 @@ function handleAvatarFile(file){
 
 function verifyUrl(c){
   if (!c) c = getCert();
-  // 优先用 CDN 链接；没有则回退到极小 base64 头像
-  let av = c.avatarUrl || '';
+  // 新版只传文件名：核验页会依次尝试同源 Pages / jsDelivr / raw，哪个能通就用哪个
+  // 旧版二维码里存的是完整 URL，继续兼容
+  let av = (c._avatarHost === 'pages' && c._avatarId) ? c._avatarId : (c.avatarUrl || '');
   if (!av && c.avatarTiny){
     const m = c.avatarTiny.match(/^data:image\/\w+;base64,(.+)$/);
     if (m) av = m[1];
@@ -1970,6 +1974,20 @@ function verifyUrl(c){
   const b64 = btoa(unescape(encodeURIComponent(json)));
   const base = location.origin + location.pathname;
   return base + '?cert=' + encodeURIComponent(b64);
+}
+
+// 头像候选地址：同源 Pages 优先，其次 jsDelivr（gh-pages / master），最后 raw
+function addAvatarSrcs(list, filename){
+  const f = String(filename || '').replace(/[^\w.\-]/g, '');
+  if (!f) return;
+  const pages = 'https://li452423.github.io/yue-kang-zheng/avatars/' + f;
+  if (list.indexOf(pages) < 0) list.push(pages);
+  const jd = [
+    'https://cdn.jsdelivr.net/gh/li452423/yue-kang-zheng@gh-pages/avatars/' + f,
+    'https://cdn.jsdelivr.net/gh/li452423/yue-kang-zheng/avatars/' + f,
+    'https://raw.githubusercontent.com/li452423/yue-kang-zheng/gh-pages/avatars/' + f
+  ];
+  jd.forEach(u => { if (list.indexOf(u) < 0) list.push(u); });
 }
 
 // 微信扫码后打开本页，从 URL 解析并展示客户健康证
@@ -1990,10 +2008,31 @@ function showCertFromUrl(){
     $('#cv-certNo').textContent = d.c || d.certNo || (d.i || d.idCard || '--');
     const av = d.a || d.avatar || '';
     if (av){
-      // 兼容：CDN 链接直接用；base64 补回 data URI
-      const src = (av.indexOf('http') === 0 || av.indexOf('data:') === 0)
-        ? av : 'data:image/jpeg;base64,' + av;
-      $('#cvPhoto').innerHTML = '<img src="' + src + '" alt="照片">';
+      // 支持三种载荷：data URI、文件名（新版）、完整 URL（旧版）
+      const srcs = [];
+      if (av.indexOf('data:') === 0){
+        srcs.push(av);
+      } else if (av.indexOf('http') === 0){
+        srcs.push(av);
+        const mm = av.match(/\/avatars\/([^?#]+)/);
+        if (mm) addAvatarSrcs(srcs, mm[1]);
+      } else if (av.length < 160 && /\.(jpg|jpeg|png)$/i.test(av)){
+        addAvatarSrcs(srcs, av); // 新版：只传文件名
+      } else {
+        srcs.push('data:image/jpeg;base64,' + av); // 旧版缩略图：裸 base64
+      }
+      const box = $('#cvPhoto');
+      box.innerHTML = '';
+      const img = document.createElement('img');
+      img.alt = '照片';
+      let si = 0;
+      img.onerror = () => {
+        si++;
+        if (si < srcs.length){ img.src = srcs[si]; }
+        else { box.innerHTML = '<svg viewBox="0 0 24 24" width="34" height="34" fill="#c3cbdb"><path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5z"/></svg>'; }
+      };
+      img.src = srcs[0];
+      box.appendChild(img);
     }
     // 生成核验二维码（重新编码当前 URL）
     const qrBox = $('#cvQr');
@@ -2833,8 +2872,8 @@ function ensureAvatarUrl(c){
       resolve(); return;
     }
     const hash = avatarHash(c.avatar);
-    // 只信任新版上传记录（_avatarId 存在），旧记录的 CDN 链接可能指向被覆盖的共用文件
-    if (c.avatarUrl && c.avatarUrl.indexOf('http') === 0 && c._avatarHash === hash && c._avatarId){
+    // 只信任上传到 GitHub Pages 的记录（与网页同源，微信可达）；旧 CDN 链接不可信
+    if (c.avatarUrl && c.avatarUrl.indexOf('http') === 0 && c._avatarHash === hash && c._avatarId && c._avatarHost === 'pages'){
       resolve(); return;
     }
 
@@ -2858,6 +2897,7 @@ function ensureAvatarUrl(c){
         c.avatarUrl = url;
         c._avatarHash = hash;
         c._avatarId = fname;
+        c._avatarHost = url.indexOf('li452423.github.io') >= 0 ? 'pages' : 'remote';
         saveCert(c);
         toast('头像上传成功', 1500);
         resolve();
@@ -2878,6 +2918,7 @@ function ensureAvatarUrl(c){
         c.avatarUrl = ''; // 清空错误的 CDN 链接
         c._avatarHash = hash;
         c._avatarId = '';
+        c._avatarHost = '';
         const timg = new Image();
         timg.onload = () => {
           const tcv = document.createElement('canvas');
