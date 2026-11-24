@@ -1088,10 +1088,6 @@ input[type=file].hidden-file{
                 <input class="field-input mono" id="f-idCard" placeholder="18位身份证号" maxlength="18">
               </div>
               <div class="field-line">
-                <span class="field-label">从业单位：</span>
-                <input class="field-input" id="f-workUnit" placeholder="从业单位名称">
-              </div>
-              <div class="field-line">
                 <span class="field-label">体检单位（盖章）：</span>
                 <input class="field-input" id="f-checkOrg" placeholder="体检机构名称">
               </div>
@@ -1404,8 +1400,6 @@ function buildDefaultCert(){
     nativePlace: '广东省东莞市东城街道',
     address: '广东省东莞市东城街道新世界花园',
 
-    /* 从业信息 */
-    workUnit: '东莞市东城新世界福华健康门诊部',
     workType: '餐饮服务',
     workPosition: '厨师',
 
@@ -1587,7 +1581,6 @@ function fillEditForm(){
   $('#f-phone').value       = c.phone || '';
   $('#f-nativePlace').value = c.nativePlace || '';
   $('#f-address').value     = c.address || '';
-  $('#f-workUnit').value     = c.workUnit || '';
   $('#f-workType').value     = c.workType || '餐饮服务';
   $('#f-workPosition').value= c.workPosition || '';
   $('#f-checkOrg').value     = c.checkOrg || '';
@@ -1646,7 +1639,6 @@ function saveEditForm(){
     phone: newPhone,
     nativePlace: $('#f-nativePlace').value.trim(),
     address: $('#f-address').value.trim(),
-    workUnit: $('#f-workUnit').value.trim(),
     workType: $('#f-workType').value,
     workPosition: $('#f-workPosition').value.trim(),
     checkOrg: $('#f-checkOrg').value.trim(),
@@ -2998,7 +2990,7 @@ function renderAll(){
   const idc = $('#c-idcard');
   if (idc) idc.textContent = c.idCard || '--';
   const orgEl = $('#c-checkOrg');
-  if (orgEl) orgEl.textContent = c.checkOrg || c.workUnit || '--';
+  if (orgEl) orgEl.textContent = c.checkOrg || '--';
   const dateEl = $('#c-checkDate');
   if (dateEl) dateEl.textContent = (c.checkDate || '--') + '（有效期一年）';
 
@@ -3048,7 +3040,7 @@ function renderAll(){
   const psName = $('#ps-name'); if (psName) psName.textContent = c.name;
   const psGender = $('#ps-gender'); if (psGender) psGender.textContent = c.gender;
   const psIdcard = $('#ps-idcard'); if (psIdcard) psIdcard.textContent = c.idCard || '--';
-  const psOrg = $('#ps-checkOrg'); if (psOrg) psOrg.textContent = c.checkOrg || c.workUnit || '--';
+  const psOrg = $('#ps-checkOrg'); if (psOrg) psOrg.textContent = c.checkOrg || '--';
   const psDate = $('#ps-checkDate'); if (psDate) psDate.textContent = (c.checkDate || '--') + '（有效期一年）';
   const psPhoto = $('#psPhoto');
   if (psPhoto){
@@ -3342,7 +3334,7 @@ function saveCertImage(){
     ry += smallFs + 8;
 
     // 健康体检单位（确保"门诊部"不被拆开）
-    const org = c.checkOrg || c.workUnit || '';
+    const org = c.checkOrg || '';
     const orgLabel = '健康体检单位：';
     ctx.textAlign = 'left';
     ctx.fillStyle = '#333';
