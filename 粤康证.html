@@ -1150,8 +1150,8 @@ input[type=file].hidden-file{
         <div class="form-section" style="margin-top:14px;">
           <div class="form-section-title">📜 证照信息</div>
           <div class="form-row">
-            <div class="form-label">证件编号</div>
-            <div class="form-control"><input class="form-input mono" id="f-certNo" placeholder="JKZ44190020260001"></div>
+            <div class="form-label">证件编号（自动生成）</div>
+            <div class="form-control"><input class="form-input mono" id="f-certNo" placeholder="系统自动生成" readonly tabindex="-1" style="background:#f1f5f9;color:#667085;cursor:not-allowed;"></div>
           </div>
           <div class="form-row">
             <div class="form-label">发证日期</div>
@@ -1321,6 +1321,20 @@ function toast(msg, ms){
   t._timer = setTimeout(() => t.classList.remove('show'), ms || 1800);
 }
 
+/* 自动生成证件编号：JKZ + 年月日 + 6位随机数字，并避开现有编号 */
+function generateCertNo(){
+  const used = new Set(getSubusers().map(s => s.cert && s.cert.certNo).filter(Boolean));
+  const phone = store.get('ykz_current_phone', null);
+  const own = phone ? store.get(userKey(phone, 'cert'), null) : store.get('ykz_cert', null);
+  if (own && own.certNo) used.add(own.certNo);
+  const date = fmtDate(new Date()).replace(/-/g, '');
+  let no = '';
+  do {
+    no = 'JKZ' + date + String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
+  } while (used.has(no));
+  return no;
+}
+
 /* ---------- 证照数据 ---------- */
 /* 广东健康证完整字段（参考《广东省食品从业人员健康检查管理规范》） */
 function buildDefaultCert(){
@@ -1342,7 +1356,7 @@ function buildDefaultCert(){
     conclusion: '未发现本人在患痢疾、伤寒、病毒性肝炎等消化道传染病，以及活动性肺结核、化脓性或渗出性皮肤病等有碍食品卫生的疾病。',
 
     /* 证照信息 */
-    certNo: 'JKZ44190020260001',
+    certNo: generateCertNo(),
     startTime: fmtDate(issue),
     endTime: fmtDate(end),
     issueOrg: '东莞市市场监督管理局',
@@ -1426,7 +1440,7 @@ function fillEditForm(){
   $('#f-checkDate').value    = c.checkDate || '';
   $('#f-checkResult').value  = c.checkResult || '合格';
   $('#f-conclusion').value   = c.conclusion || '';
-  $('#f-certNo').value       = c.certNo || '';
+  $('#f-certNo').value       = c.certNo || generateCertNo();
   $('#f-startTime').value    = c.startTime || '';
   $('#f-endTime').value      = c.endTime || '';
   $('#f-issueOrg').value     = c.issueOrg || '';
@@ -1467,7 +1481,7 @@ function saveEditForm(){
     checkItems: c.checkItems,
     checkResult: $('#f-checkResult').value,
     conclusion: $('#f-conclusion').value.trim(),
-    certNo: $('#f-certNo').value.trim() || c.certNo,
+    certNo: c.certNo || $('#f-certNo').value.trim() || generateCertNo(),
     startTime: $('#f-startTime').value || c.startTime,
     endTime: $('#f-endTime').value || c.endTime,
     issueOrg: $('#f-issueOrg').value.trim() || c.issueOrg,
