@@ -830,40 +830,6 @@ input[type=file].hidden-file{
       </div>
     </section>
 
-    <!-- ================= 核验 ================= -->
-    <section class="view" id="v-verify">
-      <div class="navbar">
-        <div class="nav-pad"></div>
-        <div class="nav-title">证照核验</div>
-        <div class="nav-pad"></div>
-      </div>
-
-      <div class="scroll">
-        <div class="verify-hero">
-          <div class="verify-icon">🔍</div>
-          <div class="verify-title">健康证真伪核验</div>
-          <div class="verify-sub">输入证件编号，或扫描健康证上的二维码<br>即时查验证照真伪与有效状态</div>
-
-          <div class="verify-input">
-            <input id="in-verify" placeholder="请输入证件编号" autocomplete="off">
-            <button class="btn primary" onclick="doVerify()">核 验</button>
-          </div>
-        </div>
-
-        <div class="result-card" id="resultCard"></div>
-
-        <div class="tips-card">
-          <div class="tips-title">核验说明</div>
-          <ul>
-            <li>核验结果实时对接广东省健康证数据平台。</li>
-            <li>如显示「已过期」或「未查询到」，请持证人重新办理。</li>
-            <li>任何单位和个人不得伪造、变造健康证明。</li>
-          </ul>
-        </div>
-        <div class="safe-bottom"></div>
-      </div>
-    </section>
-
     <!-- ================= 扫码展示健康证 ================= -->
     <section class="view" id="v-certview">
       <div class="navbar">
@@ -959,7 +925,6 @@ input[type=file].hidden-file{
         <div style="display:flex;gap:8px;margin:14px 0;">
           <button class="btn ghost" style="flex:1;" onclick="goBack()">‹ 返回</button>
           <button class="btn ghost" style="flex:1;" onclick="go('v-home')">🏠 首页</button>
-          <button class="btn ghost" style="flex:1;" onclick="go('v-verify')">📋 核验</button>
         </div>
 
         <button class="btn danger block" onclick="logout()">退出登录</button>
@@ -1264,7 +1229,6 @@ input[type=file].hidden-file{
 
   <nav class="tabbar" id="tabbar" style="display:none">
     <button class="tab active" data-view="v-home"><i>🪪</i><span>健康证</span></button>
-    <button class="tab" data-view="v-verify"><i>🔍</i><span>核验</span></button>
     <button class="tab" data-view="v-me"><i>👤</i><span>我的</span></button>
   </nav>
 </div>
@@ -3127,8 +3091,8 @@ function initSealAndQr(){
 let currentView = 'v-login';
 
 /* 页面切换：带方向感的左右滑动动画 */
-const VIEW_ORDER = ['v-home', 'v-verify', 'v-me']; // Tab 顺序，用于判断左右
-const VIEW_STACK = ['v-login', 'v-home', 'v-verify', 'v-me', 'v-subusers', 'v-edit', 'v-vip', 'v-admin', 'v-print'];
+const VIEW_ORDER = ['v-home', 'v-me']; // Tab 顺序，用于判断左右
+const VIEW_STACK = ['v-login', 'v-home', 'v-me', 'v-subusers', 'v-edit', 'v-vip', 'v-admin', 'v-print'];
 
 function go(id, opts){
   opts = opts || {};
@@ -3159,7 +3123,7 @@ function go(id, opts){
   newEl.classList.add('active');
   currentView = id;
 
-  const showTab = ['v-home', 'v-verify', 'v-me'].indexOf(id) >= 0;
+  const showTab = ['v-home', 'v-me'].indexOf(id) >= 0;
   $('#tabbar').style.display = showTab ? 'flex' : 'none';
   $$('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === id));
 
@@ -3541,60 +3505,6 @@ function drawRow(ctx, lx, vx, y, label, value, color, fs){
 }
 
 /* =========================================================
-   七、核验
-   ========================================================= */
-function doVerify(){
-  const input = $('#in-verify').value.trim().toUpperCase();
-  const card  = $('#resultCard');
-  if (!input){ toast('请输入证件编号'); return; }
-
-  const c = getCert();
-  const matched = (input === c.certNo.toUpperCase());
-  const end = new Date(c.endTime + 'T23:59:59');
-  const valid = matched && end > new Date();
-
-  card.classList.add('show');
-
-  if (matched && valid){
-    card.innerHTML =
-      '<div class="result-head">' +
-        '<div class="result-badge">✅</div>' +
-        '<div><div class="result-title">核验通过 · 证照有效</div>' +
-        '<div class="result-desc">该健康证明真实有效，处于有效期内</div></div>' +
-      '</div>' +
-      row('持 证 人', c.name + ' · ' + c.gender + ' · ' + c.age + '岁') +
-      row('证件编号', c.certNo) +
-      row('从业类别', c.workType || '') +
-      row('体检结果', c.checkResult) +
-      row('发证机关', c.issueOrg) +
-      row('有效期至', c.endTime);
-  } else if (matched && !valid){
-    card.innerHTML =
-      '<div class="result-head">' +
-        '<div class="result-badge bad">⚠️</div>' +
-        '<div><div class="result-title bad">证照已过期</div>' +
-        '<div class="result-desc">请持证人尽快重新办理健康检查</div></div>' +
-      '</div>' +
-      row('持 证 人', c.name) +
-      row('证件编号', c.certNo) +
-      row('有效期至', c.endTime);
-  } else {
-    card.innerHTML =
-      '<div class="result-head">' +
-        '<div class="result-badge bad">❌</div>' +
-        '<div><div class="result-title bad">未查询到该证照</div>' +
-        '<div class="result-desc">请核对证件编号是否输入正确</div></div>' +
-      '</div>' +
-      row('查询编号', input) +
-      row('核验时间', fmtDateTime(new Date()));
-  }
-}
-
-function row(k, v){
-  return '<div class="list-item"><span>' + k + '</span><b>' + v + '</b></div>';
-}
-
-/* =========================================================
    八、登录 / 退出
    ========================================================= */
 
@@ -3790,7 +3700,6 @@ function deregister(){
 
   // 键盘回车
   $('#in-code').addEventListener('keydown', e => { if (e.key === 'Enter') $('#btn-login').click(); });
-  $('#in-verify').addEventListener('keydown', e => { if (e.key === 'Enter') doVerify(); });
 
   // 手机号输入时动态区分新老用户
   $('#in-phone').addEventListener('input', () => {
