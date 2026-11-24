@@ -1672,38 +1672,250 @@ function uploadAvatarToHost(base64DataUrl, filename){
   );
 }
 
-function handleAvatarFile(file){
+let selfieSegmentationLoader = null;
+let selfieSegmentationQueue = Promise.resolve();
+let avatarProcessSeq = 0;
+
+function selfieAssetUrl(file){
+  return new URL('./assets/mediapipe/selfie_segmentation/' + file, document.baseURI).href;
+}
+
+function supportsAvatarWebGL(){
+  try {
+    const canvas = document.createElement('canvas');
+    return !!(window.WebGLRenderingContext && (canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
+  } catch (e){ return false; }
+}
+
+function getSelfieSegmentation(){
+  if (!supportsAvatarWebGL()) return Promise.reject(new Error('当前浏览器不支持自动人像处理'));
+  if (selfieSegmentationLoader) return selfieSegmentationLoader;
+  selfieSegmentationLoader = new Promise((resolve, reject) => {
+    const init = () => {
+      try {
+        const segmenter = new SelfieSegmentation({ locateFile: file => selfieAssetUrl(file) });
+        segmenter.setOptions({ modelSelection: 0 });
+        segmenter.initialize().then(() => resolve(segmenter)).catch(reject);
+      } catch (e){ reject(e); }
+    };
+    if (typeof SelfieSegmentation !== 'undefined'){ init(); return; }
+    const script = document.createElement('script');
+    script.src = selfieAssetUrl('selfie_segmentation.js');
+    script.onload = init;
+    script.onerror = () => reject(new Error('人像识别组件加载失败'));
+    document.head.appendChild(script);
+  }).catch(e => {
+    selfieSegmentationLoader = null;
+    throw e;
+  });
+  return selfieSegmentationLoader;
+}
+
+function runSelfieSegmentation(image){
+  const task = selfieSegmentationQueue.catch(() => {}).then(async () => {
+    const segmenter = await getSelfieSegmentation();
+    return new Promise((resolve, reject) => {
+      let done = false;
+      segmenter.onResults(results => {
+        if (done) return;
+        done = true;
+        if (results && results.segmentationMask) resolve(results.segmentationMask);
+        else reject(new Error('未检测到人像'));
+      });
+      segmenter.send({ image: image }).catch(e => {
+        if (!done){ done = true; reject(e); }
+      });
+    });
+  });
+  selfieSegmentationQueue = task.catch(() => {});
+  return task;
+}
+
+function avatarWithTimeout(promise){
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('人像处理超时')), 15000);
+    promise.then(value => { clearTimeout(timer); resolve(value); })
+      .catch(e => { clearTimeout(timer); reject(e); });
+  });
+}
+
+function avatarImageCanvas(img, maxSide){
+  let w = img.naturalWidth || img.width;
+  let h = img.naturalHeight || img.height;
+  if (!w || !h) throw new Error('图片尺寸无效');
+  const scale = Math.min(1, maxSide / Math.max(w, h));
+  w = Math.max(1, Math.round(w * scale));
+  h = Math.max(1, Math.round(h * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+  return canvas;
+}
+
+function createRedIdPhoto(source, mask){
+  const w = source.width, h = source.height;
+  const maskCanvas = document.createElement('canvas');
+  maskCanvas.width = w; maskCanvas.height = h;
+  const maskCtx = maskCanvas.getContext('2d', { willReadFrequently: true });
+  maskCtx.drawImage(mask, 0, 0, w, h);
+  const maskData = maskCtx.getImageData(0, 0, w, h).data;
+
+  // 统计人物区域，并用人像顶部确定头部位置和裁剪中心
+  const rowCounts = new Uint32Array(h);
+  let minX = w, maxX = -1, headTop = -1, maxY = -1, personPixels = 0;
+  const minRowPixels = Math.max(2, Math.floor(w * 0.001));
+  for (let y = 0; y < h; y++){
+    for (let x = 0; x < w; x++){
+      const i = (y * w + x) * 4;
+      const value = Math.min(maskData[i], maskData[i + 3]);
+      if (value < 128) continue;
+      personPixels++;
+      rowCounts[y]++;
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+    }
+  }
+  for (let y = 0; y < h; y++){
+    if (rowCounts[y] >= minRowPixels){ headTop = y; break; }
+  }
+  if (headTop < 0 || maxX < 0 || personPixels < w * h * 0.003) throw new Error('未检测到清晰人像');
+
+  const headBandEnd = Math.min(maxY, headTop + Math.max(8, Math.round((maxY - headTop + 1) * 0.2)));
+  const xWeights = new Float64Array(w);
+  let topWeight = 0;
+  for (let y = headTop; y <= headBandEnd; y++){
+    for (let x = 0; x < w; x++){
+      const i = (y * w + x) * 4;
+      const value = Math.min(maskData[i], maskData[i + 3]);
+      if (value >= 128){ xWeights[x] += value; topWeight += value; }
+    }
+  }
+  let headCenterX = (minX + maxX) / 2;
+  let accumulated = 0;
+  for (let x = 0; x < w; x++){
+    accumulated += xWeights[x];
+    if (accumulated >= topWeight / 2){ headCenterX = x; break; }
+  }
+
+  // 最大的 5:7 裁剪框，头顶尽量位于照片顶部下方约 10%
+  const ratio = 5 / 7;
+  let cropW, cropH;
+  if (w / h > ratio){ cropH = h; cropW = h * ratio; }
+  else { cropW = w; cropH = w / ratio; }
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+  const cropX = clamp(headCenterX - cropW / 2, 0, w - cropW);
+  const cropY = clamp(headTop - cropH * 0.1, 0, h - cropH);
+
+  const outW = 300, outH = 420;
+  const person = document.createElement('canvas');
+  person.width = outW; person.height = outH;
+  const personCtx = person.getContext('2d');
+  personCtx.drawImage(source, cropX, cropY, cropW, cropH, 0, 0, outW, outH);
+
+  const alphaCanvas = document.createElement('canvas');
+  alphaCanvas.width = outW; alphaCanvas.height = outH;
+  const alphaCtx = alphaCanvas.getContext('2d', { willReadFrequently: true });
+  alphaCtx.drawImage(maskCanvas, cropX, cropY, cropW, cropH, 0, 0, outW, outH);
+  const alphaData = alphaCtx.getImageData(0, 0, outW, outH);
+  const pixels = alphaData.data;
+  for (let i = 0; i < pixels.length; i += 4){
+    const value = Math.min(pixels[i], pixels[i + 3]);
+    const alpha = Math.round(clamp((value - 48) / 192, 0, 1) * 255);
+    pixels[i] = 255; pixels[i + 1] = 255; pixels[i + 2] = 255; pixels[i + 3] = alpha;
+  }
+  alphaCtx.putImageData(alphaData, 0, 0);
+  personCtx.globalCompositeOperation = 'destination-in';
+  personCtx.drawImage(alphaCanvas, 0, 0);
+
+  const output = document.createElement('canvas');
+  output.width = outW; output.height = outH;
+  const outCtx = output.getContext('2d');
+  outCtx.fillStyle = '#FF0000';
+  outCtx.fillRect(0, 0, outW, outH);
+  outCtx.drawImage(person, 0, 0);
+  return output.toDataURL('image/jpeg', 0.9);
+}
+
+function setAvatarProcessing(processing){
+  document.querySelectorAll('#captureSheet input[type="file"], #v-edit .form-actions button, button[onclick="openCapture()"]')
+    .forEach(el => { el.disabled = processing; });
+  const picker = $('#avatarPicker');
+  if (picker){
+    picker.setAttribute('aria-busy', processing ? 'true' : 'false');
+    picker.style.pointerEvents = processing ? 'none' : '';
+    picker.style.opacity = processing ? '0.65' : '';
+  }
+}
+
+function readAvatarFile(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result);
+    reader.onerror = () => reject(new Error('图片读取失败'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function loadAvatarImage(src){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('图片解码失败'));
+    img.src = src;
+  });
+}
+
+function commitProcessedAvatar(c, dataUrl){
+  c.avatar = dataUrl;
+  c.avatarUrl = '';
+  c.avatarTiny = '';
+  c._avatarHash = '';
+  c._avatarId = '';
+  c._avatarHost = '';
+  saveCert(c);
+  const picker = $('#avatarPicker');
+  picker.innerHTML = '<img src="' + dataUrl + '"><span class="cam">📷</span>';
+  renderAll();
+}
+
+async function handleAvatarFile(file){
   if (!file){ return; }
   if (!file.type.startsWith('image/')){ toast('请选择图片文件'); return; }
   if (file.size > 5 * 1024 * 1024){ toast('图片过大，请小于 5MB'); return; }
 
-  const reader = new FileReader();
-  reader.onload = e => {
-    const dataUrl = e.target.result;
-    const img = new Image();
-    img.onload = () => {
-      // 压缩到合适尺寸（最长边 480）
-      const maxSide = 480;
-      let w = img.width, h = img.height;
-      if (w > h && w > maxSide){ h = Math.round(h * maxSide / w); w = maxSide; }
-      else if (h > maxSide){ w = Math.round(w * maxSide / h); h = maxSide; }
-      const cv = document.createElement('canvas');
-      cv.width = w; cv.height = h;
-      cv.getContext('2d').drawImage(img, 0, 0, w, h);
-      const compressed = cv.toDataURL('image/jpeg', 0.85);
+  const taskId = ++avatarProcessSeq;
+  const targetPhone = store.get('ykz_current_phone', '');
+  const targetSubId = getCurrentSubuserId();
+  setAvatarProcessing(true);
+  toast('正在生成红底一寸证件照…', 15000);
+  try {
+    const img = await loadAvatarImage(await readAvatarFile(file));
+    const originalCompressed = avatarImageCanvas(img, 480).toDataURL('image/jpeg', 0.85);
+    let finalDataUrl = originalCompressed;
+    let generated = false;
+    try {
+      const working = avatarImageCanvas(img, 1024);
+      const mask = await avatarWithTimeout(runSelfieSegmentation(working));
+      if (taskId !== avatarProcessSeq) return;
+      finalDataUrl = createRedIdPhoto(working, mask);
+      generated = true;
+    } catch (e){
+      console.warn('自动红底处理失败，保留原照片：', e);
+    }
 
-      const c = getCert();
-      c.avatar = compressed;
-      c.avatarUrl = ''; // 新头像需重新上传到 CDN
-      saveCert(c);
-
-      const picker = $('#avatarPicker');
-      picker.innerHTML = '<img src="' + compressed + '"><span class="cam">📷</span>';
-      toast('头像已上传，记得点「保存资料」');
-    };
-    img.src = dataUrl;
-  };
-  reader.readAsDataURL(file);
+    if (taskId !== avatarProcessSeq) return;
+    if (store.get('ykz_current_phone', '') !== targetPhone || getCurrentSubuserId() !== targetSubId){
+      toast('客户已切换，本次照片未保存，请重新上传', 3000); return;
+    }
+    commitProcessedAvatar(getCert(), finalDataUrl);
+    toast(generated ? '红底一寸照已生成，记得点「保存资料」' : '未能自动生成红底照，已保留原照片', 3000);
+  } catch (e){
+    console.error('照片读取失败：', e);
+    if (taskId === avatarProcessSeq) toast('图片读取失败，请换一张', 2500);
+  } finally {
+    if (taskId === avatarProcessSeq) setAvatarProcessing(false);
+  }
 }
 
 function verifyUrl(c){
@@ -2672,8 +2884,8 @@ function ensureAvatarUrl(c){
         const timg = new Image();
         timg.onload = () => {
           const tcv = document.createElement('canvas');
-          tcv.width = 40; tcv.height = 52;
-          tcv.getContext('2d').drawImage(timg, 0, 0, 40, 52);
+          tcv.width = 40; tcv.height = 56;
+          tcv.getContext('2d').drawImage(timg, 0, 0, 40, 56);
           c.avatarTiny = tcv.toDataURL('image/jpeg', 0.3);
           saveCert(c);
           resolve();
