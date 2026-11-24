@@ -910,15 +910,16 @@ input[type=file].hidden-file{
           <div class="list-item"><span>客户数量</span><b id="me-subCount">0 人</b></div>
         </div>
 
-        <!-- 功能入口 -->
-        <div class="list-card">
-          <div class="list-item link" onclick="go('v-subusers')"><span>👥 管理我的客户</span><b id="subuserCount">0 人 ›</b></div>
-        </div>
+        <!-- 功能入口：客户管理作为主操作突出显示 -->
+        <button class="btn primary block" style="margin-top:16px;min-height:68px;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-radius:16px;" onclick="go('v-subusers')">
+          <span>👥 管理我的客户</span>
+          <b id="subuserCount" style="font-size:14px;color:#fff;background:rgba(255,255,255,.2);padding:5px 10px;border-radius:999px;">0 人 ›</b>
+        </button>
 
-        <!-- 账号操作 -->
+        <!-- 账号操作：次要入口缩小显示 -->
         <div class="list-card">
-          <div class="list-item link" onclick="showChangePwd()"><span>🔑 修改密码</span><b>›</b></div>
-          <div class="list-item link" onclick="deregister()"><span>❌ 注销账号</span><b style="color:#e74c3c">›</b></div>
+          <div class="list-item link" style="padding:11px 14px;font-size:13px;" onclick="showChangePwd()"><span>🔑 修改密码</span><b style="font-size:16px;">›</b></div>
+          <div class="list-item link" style="padding:11px 14px;font-size:13px;" onclick="deregister()"><span>❌ 注销账号</span><b style="color:#e74c3c;font-size:16px;">›</b></div>
         </div>
 
         <!-- 导航工具栏 -->
