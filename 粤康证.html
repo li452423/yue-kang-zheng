@@ -1126,26 +1126,6 @@ input[type=file].hidden-file{
         </div>
         <div style="text-align:center;font-size:12px;color:#999;margin-top:6px;">扫码核验健康证真伪</div>
 
-        <!-- ============ 体检结论 ============ -->
-        <div class="form-section" style="margin-top:14px;">
-          <div class="form-section-title">🩺 体检结论</div>
-          <div class="form-row">
-            <div class="form-label">体检结果</div>
-            <div class="form-control">
-              <select class="form-select" id="f-checkResult">
-                <option value="合格">合格</option>
-                <option value="不合格">不合格</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-label">检查结论</div>
-            <div class="form-control">
-              <textarea class="form-textarea" id="f-conclusion" placeholder="体检医生结论"></textarea>
-            </div>
-          </div>
-        </div>
-
         <!-- ============ 证照信息 ============ -->
         <div class="form-section" style="margin-top:14px;">
           <div class="form-section-title">📜 证照信息</div>
@@ -1426,8 +1406,6 @@ function fillEditForm(){
   $('#f-idCard').value      = c.idCard || '';
   $('#f-checkOrg').value     = c.checkOrg || '';
   $('#f-checkDate').value    = c.checkDate || '';
-  $('#f-checkResult').value  = c.checkResult || '合格';
-  $('#f-conclusion').value   = c.conclusion || '';
   $('#f-certNo').value       = c.certNo || generateCertNo();
 
   // 头像预览
@@ -1464,8 +1442,8 @@ function saveEditForm(){
     checkOrgCode: c.checkOrgCode,
     checkDate: $('#f-checkDate').value || fmtDate(new Date()),
     checkItems: c.checkItems,
-    checkResult: $('#f-checkResult').value,
-    conclusion: $('#f-conclusion').value.trim(),
+    checkResult: '合格',
+    conclusion: c.conclusion || '',
     certNo: c.certNo || $('#f-certNo').value.trim() || generateCertNo(),
     startTime: c.startTime || '',
     endTime: c.endTime || '',
