@@ -1065,7 +1065,8 @@ input[type=file].hidden-file{
                 <input id="in-admin-phone" type="tel" maxlength="11" placeholder="用户手机号" style="font-size:16px;">
               </div>
               <select id="in-admin-plan" style="width:100%;height:48px;border:1.5px solid #e2e8f2;border-radius:12px;padding:0 14px;font-size:15px;font-family:inherit;outline:0;background:#fafbfe;margin-bottom:12px;color:#151b26;">
-                <option value="monthly">月度会员（50元/月）</option>
+                <option value="monthly">月会员（50元/月）</option>
+                <option value="yearly">年会员（500元/年）</option>
               </select>
               <div style="display:flex;gap:10px;">
                 <button class="btn primary" style="flex:1;" onclick="adminGrant()">✅ 授权开通</button>
@@ -2632,7 +2633,8 @@ function adminRevoke(){
    会员订阅管理（按月付费 · 演示环境不真实扣费）
    ========================================================= */
 const VIP_PLANS = [
-  { id:'monthly', name:'月度会员', months:1, price:50, origin:50, tag:'50元/月', desc:'按月订阅，每月 50 元，到期自动失效，可随时续费。', recommend:false }
+  { id:'monthly', name:'月会员', months:1, price:50, unit:'月' },
+  { id:'yearly', name:'年会员', months:12, price:500, unit:'年' }
 ];
 
 function getVip(){
@@ -2658,17 +2660,11 @@ function renderVipPlans(){
   const cur = getVip();
   box.innerHTML = VIP_PLANS.map(p => {
     const isCur = cur.plan === p.id && cur.active;
-    const monthPrice = (p.price / p.months).toFixed(1);
-    const originPrice = p.origin > p.price ? '<span class="del">¥' + p.origin + '</span>' : '';
-    const priceUnit = p.months === 1 ? '月' : monthPrice + ' 元/月';
-    return '<div class="vip-plan ' + (p.recommend ? 'recommend' : '') + ' ' + (isCur ? 'selected' : '') + '">' +
+    return '<div class="vip-plan ' + (isCur ? 'selected' : '') + '">' +
       '<div class="vip-plan-row">' +
-        '<div><span class="vip-plan-name">' + p.name + '</span>' +
-          '<span class="vip-plan-tag">' + p.tag + '</span></div>' +
-        '<div class="vip-plan-price">' + originPrice + '¥' + p.price +
-          '<small> / ' + priceUnit + '</small></div>' +
+        '<div class="vip-plan-name">' + p.name + '</div>' +
+        '<div class="vip-plan-price">¥' + p.price + '<small> / ' + p.unit + '</small></div>' +
       '</div>' +
-      '<div class="vip-plan-desc">' + p.desc + '</div>' +
       (isCur
         ? '<div class="vip-plan-cur">✅ 当前已开通 · 到期 ' + fmtExpire(cur.expire) + '</div>'
         : '<div class="vip-plan-contact" onclick="contactAdminVip()">📞 开通会员请联系管理员</div>') +
