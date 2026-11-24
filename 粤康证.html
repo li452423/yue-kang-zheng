@@ -1153,18 +1153,6 @@ input[type=file].hidden-file{
             <div class="form-label">证件编号（自动生成）</div>
             <div class="form-control"><input class="form-input mono" id="f-certNo" placeholder="系统自动生成" readonly tabindex="-1" style="background:#f1f5f9;color:#667085;cursor:not-allowed;"></div>
           </div>
-          <div class="form-row">
-            <div class="form-label">发证日期</div>
-            <div class="form-control"><input class="form-input" id="f-startTime" type="date"></div>
-          </div>
-          <div class="form-row">
-            <div class="form-label">有效期至</div>
-            <div class="form-control"><input class="form-input" id="f-endTime" type="date"></div>
-          </div>
-          <div class="form-row">
-            <div class="form-label">发证机关</div>
-            <div class="form-control"><input class="form-input" id="f-issueOrg" placeholder="如：东莞市市场监督管理局"></div>
-          </div>
         </div>
 
         <!-- 操作按钮 -->
@@ -1441,9 +1429,6 @@ function fillEditForm(){
   $('#f-checkResult').value  = c.checkResult || '合格';
   $('#f-conclusion').value   = c.conclusion || '';
   $('#f-certNo').value       = c.certNo || generateCertNo();
-  $('#f-startTime').value    = c.startTime || '';
-  $('#f-endTime').value      = c.endTime || '';
-  $('#f-issueOrg').value     = c.issueOrg || '';
 
   // 头像预览
   const picker = $('#avatarPicker');
@@ -1482,9 +1467,9 @@ function saveEditForm(){
     checkResult: $('#f-checkResult').value,
     conclusion: $('#f-conclusion').value.trim(),
     certNo: c.certNo || $('#f-certNo').value.trim() || generateCertNo(),
-    startTime: $('#f-startTime').value || c.startTime,
-    endTime: $('#f-endTime').value || c.endTime,
-    issueOrg: $('#f-issueOrg').value.trim() || c.issueOrg,
+    startTime: c.startTime || '',
+    endTime: c.endTime || '',
+    issueOrg: c.issueOrg || '',
     issueOrgCode: c.issueOrgCode,
     avatar: c.avatar,
     avatarUrl: c.avatarUrl || '',
