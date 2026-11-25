@@ -1244,18 +1244,14 @@ input[type=file].hidden-file{
 
 <div class="toast" id="toast"></div>
 
-<!-- 选择来源底部弹窗：label 内嵌 file input，原生触发最可靠 -->
+<!-- 选择来源底部弹窗：点击选项用 JS 主动触发 input.click()，微信内最可靠 -->
 <div class="capture-mask" id="captureMask" onclick="closeCapture()"></div>
 <div class="capture-sheet" id="captureSheet">
-  <label class="capture-item cam" style="display:block;cursor:pointer;">
-    📷 拍照上传
-    <input type="file" accept="image/*" capture="user" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;" onchange="onFileSelected(event,'cam')">
-  </label>
-  <label class="capture-item album" style="display:block;cursor:pointer;">
-    🖼 从相册选择
-    <input type="file" accept="image/*" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;" onchange="onFileSelected(event,'album')">
-  </label>
+  <div class="capture-item cam" onclick="pickImage('fileInputCam')">📷 拍照上传</div>
+  <div class="capture-item album" onclick="pickImage('fileInputAlbum')">🖼 从相册选择</div>
   <div class="capture-item cancel" onclick="closeCapture()">取 消</div>
+  <input type="file" id="fileInputCam" accept="image/*" capture="user" style="position:absolute;width:1px;height:1px;opacity:0;left:-9999px;overflow:hidden;" onchange="onFileSelected(event,'cam')">
+  <input type="file" id="fileInputAlbum" accept="image/*" style="position:absolute;width:1px;height:1px;opacity:0;left:-9999px;overflow:hidden;" onchange="onFileSelected(event,'album')">
 </div>
 
 <script>/* qrcodejs (MIT) 内联，避免国内网络取不到 CDN 导致二维码空白 */
