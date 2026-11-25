@@ -1406,7 +1406,9 @@ function fillEditForm(){
   $('#f-idCard').value      = c.idCard || '';
   $('#f-checkOrg').value     = c.checkOrg || '';
   $('#f-checkDate').value    = c.checkDate || '';
-  $('#f-certNo').value       = c.certNo || generateCertNo();
+  const certNo = c.certNo || generateCertNo();
+  if (!c.certNo){ c.certNo = certNo; saveCert(c); }
+  $('#f-certNo').value       = certNo;
 
   // 头像预览
   const picker = $('#avatarPicker');
