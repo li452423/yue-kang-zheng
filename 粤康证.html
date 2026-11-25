@@ -1458,7 +1458,6 @@ function saveEditForm(){
   };
 
   saveCert(updated);
-  if (newPhone) store.set('ykz_phone', newPhone);
 
   // 同步更新子用户列表中的姓名（用于列表实时显示）
   const curSub = getCurrentSubuser();
@@ -1838,7 +1837,7 @@ function createRedIdPhoto(source, mask){
 }
 
 function setAvatarProcessing(processing){
-  document.querySelectorAll('#captureSheet input[type="file"], #v-edit .form-actions button, button[onclick="openCapture()"]')
+  document.querySelectorAll('#captureSheet input[type="file"], button[onclick="openCapture()"]')
     .forEach(el => { el.disabled = processing; });
   const picker = $('#avatarPicker');
   if (picker){
